@@ -27,5 +27,5 @@ You can add your own datasets as long as they follow this structure.
 
 ## Contact
 
-**For questions regarding algorithm --> Alfredo Nazabal**: anazabal@turing.ac.uk
-**For bugs or suggestion regarding code --> Fathy Shalaby**: fathy.mshalaby@outlook.com
+* **For questions regarding algorithm --> Alfredo Nazabal**: anazabal@turing.ac.uk
+* **For bugs or suggestion regarding code --> Fathy Shalaby**: fathy.mshalaby@outlook.com
