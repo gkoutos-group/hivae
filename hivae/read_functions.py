@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Dec  6 15:40:14 2017
-
 Functions needed to read the data from different databases
-
 @author: anazabal, olmosUC3M, ivaleraM
 """
 
@@ -13,11 +11,14 @@ import numpy as np
 import os
 import scipy.io as sc
 from sklearn.metrics import mean_squared_error
-import pandas as pd
 
 def read_data(data_file, types_file, miss_file, true_miss_file):
-    df = pd.read_csv(data_file)
-    types_dict = dict(zip(list(df),[df[x].dtype.name for x in df]))
+    
+    #Read types of data from data file
+    with open(types_file) as f:
+        types_dict = [{k: v for k, v in row.items()}
+        for row in csv.DictReader(f, skipinitialspace=True)]
+    
     #Read data from input file
     with open(data_file, 'r') as f:
         data = [[float(x) for x in rec] for rec in csv.reader(f, delimiter=',')]
