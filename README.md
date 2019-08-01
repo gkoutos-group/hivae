@@ -6,7 +6,7 @@ The details of this model are included in this [paper](https://arxiv.org/abs/180
 
 ## Databse description
 
-There are three different example datasets found in the library (Wine, Adult and Diabetes). Majority of thee datasets( Wine and Adult) have each their own folder, containing:
+There are three different example datasets found in the library (Wine, Adult and Diabetes). Majority of the datasets( Wine and Adult) have each their own folder, containing:
 
 * **data.csv**: the dataset
 * **data_types.csv(NOT REQUIRED, LOOK AT THE EXAMPLE(working_example)**: a csv containing the types of that particular dataset. Every line is a different attribute containing three paramenters:
