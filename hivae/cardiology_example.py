@@ -14,23 +14,23 @@ results_path = '/data/projects/vectorisation/HI-VAE/data/Cardiology/results/'
 network_path = '/data/projects/vectorisation/HI-VAE/data/Cardiology/networks/'
 
 types_dict = {
-    'gender':'countcat',2,2
-    'age':'count',1
-    'HGHT':'pos',1
-    'WGHT':'pos',1
-    'BMI':'pos',1
-    'HR':'pos',1
-    'BPDIA':'pos',1
-    'BPSYS':'pos',1
-    'O2SATS':'pos',1
+    'gender':['countcat',2,2],
+    'age':['count',1,None],
+    'HGHT':['pos',1,None],
+    'WGHT':['pos',1,None],
+    'BMI':['pos',1,None],
+    'HR':['pos',1,None],
+    'BPDIA':['pos',1,None],
+    'BPSYS':['pos',1,None],
+    'O2SATS':['pos',1,None]
 }
 
 network_dict = {
-    'batch_size' = 32,
-    'model'      = 'model_HIVAE_inputDropout',
-    'z_dim'      = 5,
-    'y_dim'      = 5,
-    's_dim'      = 3,    
+    'batch_size' : 32,
+    'model': 'model_HIVAE_inputDropout',
+    'z_dim': 5,
+    'y_dim': 5,
+    's_dim': 3,
 }
 
 

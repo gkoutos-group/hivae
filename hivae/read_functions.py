@@ -13,7 +13,7 @@ import scipy.io as sc
 from sklearn.metrics import mean_squared_error
 
 def read_data_df_as_input(datadf, types_dict_dic, miss_file, true_miss):
-    types_dict = [{'type':x} for x in types_dict_dic.values()]
+    types_dict = [{'type':x[0],'dim':x[1],'nclass':x[2]} for x in types_dict_dic.values()]
     data = np.array(datadf)
     # Sustitute NaN values by something (we assume we have the real missing value mask)
     if true_miss:

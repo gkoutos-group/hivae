@@ -9,44 +9,43 @@ import os
 import csv
 
 class HIVAE():
-    def __init__(self,parameters = {'model_name':"model_HIVAE_inputDropout",'z_dim':2,'y_dim':5,'s_dim':10,'dim_latent_z':2,'dim_latent_y':3,'dim_latent_s':4,'m_perc':20,'mask':1}):
-        self.model_name = parameters['model_name']
-        self.m_perc = parameters['m_perc']
-        self.mask = parameters['mask']
-        self.miss_file = parameters['missing']
-        self.true_miss_file = parameters['true_missing']
-        self.types_dict = None
-        self.NN = None
-        self.dim_latent_s = parameters['dim_latent_s']
-        self.dim_latent_y = parameters['dim_latent_y']
-        self.dim_latent_z = parameters['dim_latent_z']
+    def __init__(self,miss_file = None,true_miss_file = None,types_dict = {'AGE':'count,1','SEX':'cat,2,2','BMI':'pos,1','BP':'pos,1','S1':'pos,1','S2':'pos,1','S3':'pos,1','S4':'pos,1','S5':'pos,1','S6':'pos,1','Y':'pos,1'},network_dict ={'batch_size': 32,'model':'model_HIVAE_inputDropout','z_dim': 5,'y_dim':5,'s_dim': 3,'mask':1},networkl_path = './models'):
+        self.model_name = network_dict['model_name']
+        self.m_perc = 0
+        self.mask = network_dict['mask']
+        self.types_dict = types_dict
         self.save = 1000
-        self.dim_s= parameters['dim_s']
-        self.dim_z = parameters['dim_z']
-        self.dim_y = parameters['dim_y']
+        self.dim_s= network_dict['dim_s']
+        self.dim_z = network_dict['dim_z']
+        self.dim_y = network_dict['dim_y']
 
-        self.savefile = str(str(self.model_name)+'_'+str(self.dataset)+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(self.training()[1]))
+        self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(self.training()[1]))
         # Create a directoy for the save file
-        if not os.path.exists('./saved_networks/' + self.savefile):
+        if not os.path.exists(networkl_path + self.savefile):
             os.makedirs('./saved_networks/' + self.savefile)
-        self.network_file_name = './saved_Networks/' + self.savefile + '/' + self.savefile + '.ckpt'
-        self.log_file_name = './saved_Network/' + self.savefile + '/log_file_' + self.savefile + '.txt'
+        self.network_file_name = networkl_path + self.savefile  + '.ckpt'
+        self.log_file_name = networkl_path + self.savefile + '/log_file_' + self.savefile + '.txt'
 
-    def _initialize_net(self):
+    def _initialize_net(self,types_dict,batch_size):
         if self.types_dict:
             sess_HVAE = tf.Graph()
             with sess_HVAE.as_default():
-                tf_nodes = graph_new.HVAE_graph(self.model_name, self.types_file, self.batch_size, learning_rate=1e-3,
+                tf_nodes = graph_new.HVAE_graph(self.model_name, types_dict, batch_size, learning_rate=1e-3,
                                                 z_dim=self.dim_latent_z, y_dim=self.dim_latent_y,
                                                 s_dim=self.dim_latent_s, y_dim_partition=self.dim_latent_y)
                 return tf_nodes,sess_HVAE
 
 
-    def _train(self,traindata,types_dict,miss_mask,true_miss_mask,n_samples,epochs,batchsize):
-        n_batches = int(np.floor(np.shape(traindata)[0] / batchsize))
-        miss_mask = np.multiply(self.miss_mask, self.true_miss_mask)
+    def _train(self,traindata,typesdict,miss_file=None,true_miss_file=None,epochs=100,batchsize=1000):
+        train_data, types_dict, miss_mask, true_miss_mask, n_samples = read_functions.read_data_df(traindata,
+                                                                                                typesdict,
+                                                                                                miss_file,
+                                                                                                true_miss_file)
 
-        with tf.Session(graph=self._iniatilze_net()[1]) as session:
+        n_batches = int(np.floor(np.shape(traindata)[0] / batchsize))
+        miss_mask = np.multiply(miss_mask, true_miss_mask)
+
+        with tf.Session(graph=self._iniatilze_net(types_dict,batchsize)[1]) as session:
 
             # Add ops to save and restore all the variables.
             saver = tf.train.Saver()
@@ -86,14 +85,14 @@ class HIVAE():
 
 
             # Randomize the data in the mini-batches
-            random_perm = np.random.permutation(range(np.shape(self.train_data)[0]))
-            train_data_aux = self.train_data[random_perm, :]
+            random_perm = np.random.permutation(range(np.shape(train_data)[0]))
+            train_data_aux = train_data[random_perm, :]
             miss_mask_aux = miss_mask[random_perm, :]
-            true_miss_mask_aux = self.true_miss_mask[random_perm, :]
+            true_miss_mask_aux = true_miss_mask[random_perm, :]
 
             for i in range(n_batches):
                 # Create inputs for the feed_dict
-                data_list, miss_list = read_functions.next_batch(train_data_aux, self.types_dict, miss_mask_aux, batchsize,
+                data_list, miss_list = read_functions.next_batch(train_data_aux, types_dict, miss_mask_aux, batchsize,
                                                                  index_batch=i)
 
                 # Delete not known data (input zeros)
@@ -167,9 +166,9 @@ class HIVAE():
 
             # Create global dictionary of the distribution parameters
             p_params_complete = read_functions.p_distribution_params_concatenation(p_params_list, self.types_dict,
-                                                                                   self.dim_latent_z, self.dim_latent_s)
-            q_params_complete = read_functions.q_distribution_params_concatenation(q_params_list, self.dim_latent_z,
-                                                                                   self.dim_latent_s)
+                                                                                   self.dim_z, self.dim_s)
+            q_params_complete = read_functions.q_distribution_params_concatenation(q_params_list, self.dim_z,
+                                                                                   self.dim_s)
 
             # Number of clusters created
             cluster_index = np.argmax(q_params_complete['s'], 1)
@@ -201,15 +200,15 @@ class HIVAE():
             # Compute test-loglik from log_p_x_missing
             log_p_x_total = np.transpose(np.concatenate(log_p_x_total, 1))
             log_p_x_missing_total = np.transpose(np.concatenate(log_p_x_missing_total, 1))
-            if self.true_miss_file:
+            if true_miss_file:
                 log_p_x_missing_total = np.multiply(log_p_x_missing_total,
                                                     true_miss_mask_aux[:n_batches * batchsize, :])
             avg_test_loglik = np.sum(log_p_x_missing_total) / np.sum(1.0 - miss_mask_aux)
 
 
 
-    def training(self,traindata,types_dict,miss_mask,true_miss_mask,n_samples,epoch,batchsize):
-        train = self._train(traindata,types_dict,miss_mask,true_miss_mask,n_samples,epoch,batchsize)
+    def training(self,traindata,epochs=200,batchsize=1000,miss_mask=None,true_miss_mask=None,results_path='./results'):
+        train = self._train(traindata,self.types_dict,miss_mask,true_miss_mask,epochs,batchsize)
         # Display logs per epoch step
         '''if epoch % display == 0:
             print_loss(epoch, train.start_time, train.avg_loss / n_batches, avg_test_loglik, avg_KL_s / n_batches,
@@ -230,37 +229,37 @@ class HIVAE():
         train.error_train_mode_global.append(train.error_train_mode)
         train.error_test_mode_global.append(train.error_test_mode)
 
-        if epoch % self.save == 0:
+        if train.epoch % self.save == 0:
             print('Saving Variables ...')
             save_path = train.saver.save(train.session, self.network_file_name)
 
         print('Training Finished ...')
 
         # Saving needed variables in csv
-        if not os.path.exists('./Results' + '/' + self.savefile):
-            os.makedirs('./Results' + '/' + self.savefile)
+        if not os.path.exists(results_path + '/' + self.savefile):
+            os.makedirs(results_path + '/' + self.savefile)
 
-        with open('./Results' + '/' + self.savefile + '/loglik.csv', "w") as f:
+        with open(results_path + '/' + self.savefile + '/loglik.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(train.loglik_epoch)
 
-        with open('./Results' + '/' + self.savefile + '/testloglik.csv', "w") as f:
+        with open(results_path + '/' + self.savefile + '/testloglik.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(train.testloglik_epoch)
 
-        with open('./Results' + '/' + self.savefile + '/KL_s.csv', "w") as f:
+        with open(results_path + '/' + self.savefile + '/KL_s.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(np.reshape(train.KL_s_epoch, [-1, 1]))
 
-        with open('./Results' + '/' + self.savefile + '/KL_z.csv', "w") as f:
+        with open(results_path + '/' + self.savefile + '/KL_z.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(np.reshape(train.KL_z_epoch, [-1, 1]))
 
-        with open('./Results'+ '/' + self.savefile + '/train_error.csv', "w") as f:
+        with open(results_path+ '/' + self.savefile + '/train_error.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(train.error_train_mode_global)
 
-        with open('./Results' + '/' + self.savefile + '/test_error.csv', "w") as f:
+        with open(results_path + '/' + self.savefile + '/test_error.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(train.error_test_mode_global)
 
@@ -269,8 +268,8 @@ class HIVAE():
 
 
 
-    def testing(self,batchsize=10000):
-        test = self._train(1,batchsize)
+    def testing(self,testdata,batchsize = 1000000,result_path):
+        test = self._train(1,batchsize,self.types_dict)
 
         '''# Display logs per epoch step
         if args.display == 1:
@@ -310,42 +309,42 @@ class HIVAE():
         train_data_transformed = train_data_transformed[np.argsort(test.random_perm)]
         data_reconstruction = data_reconstruction[np.argsort(test.random_perm)]
 
-        if not os.path.exists('./Results/' + self.savefile):
-            os.makedirs('./Results/' + self.save_file)
+        if not os.path.exists(result_path + self.savefile):
+            os.makedirs(result_path + self.save_file)
 
-        with open('Results/' + self.savefile + '/' + self.savefile + '_data_reconstruction.csv', "w") as f:
+        with open(result_path + self.savefile + '/' + self.savefile + '_data_reconstruction.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(data_reconstruction)
-        with open('Results/' + self.savefile + '/' + self.savefile + '_data_true.csv', "w") as f:
+        with open(result_path + self.savefile + '/' + self.savefile + '_data_true.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(train_data_transformed)
 
         # Saving needed variables in csv
-        if not os.path.exists('./Results_test_csv/' + self.savefile):
+        if not os.path.exists(result_path+'/Results_test_csv/' + self.savefile):
             os.makedirs('./Results_test_csv/' + self.savefile)
 
         # Train loglik per variable
-        with open('Results_test_csv/' + self.savefile + '/' + self.savefile + '_loglik.csv', "w") as f:
+        with open(result_path+'Results_test_csv/' + self.savefile + '/' + self.savefile + '_loglik.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(test.loglik_epoch)
 
         # Test loglik per variable
-        with open('Results_test_csv/' + self.savefile + '/' + self.savefile + '_testloglik.csv', "w") as f:
+        with open(result_path+'Results_test_csv/' + self.savefile + '/' + self.savefile + '_testloglik.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(test.testloglik_epoch)
 
         # Train NRMSE per variable
-        with open('Results_test_csv/' + self.savefile + '/' + self.savefile + '_train_error.csv', "w") as f:
+        with open(result_path+'Results_test_csv/' + self.savefile + '/' + self.savefile + '_train_error.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(test.error_train_mode_global)
 
         # Test NRMSE per variable
-        with open('Results_test_csv/' + self.savefile + '/' + self.savefile + '_test_error.csv', "w") as f:
+        with open(result_path+'Results_test_csv/' + self.savefile + '/' + self.savefile + '_test_error.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows(test.error_test_mode_global)
 
         # Number of clusters
-        with open('Results_test_csv/' + self.savefile + '/' + self.savefile + '_clusters.csv', "w") as f:
+        with open(result_path+'Results_test_csv/' + self.savefile + '/' + self.savefile + '_clusters.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerows([[len(test.cluster)]])
 
