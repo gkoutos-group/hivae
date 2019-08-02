@@ -28,14 +28,14 @@ types_dict = {
 network_dict = {
     'batch_size' : 32,
     'model_name': 'model_HIVAE_inputDropout',
-    'z_dim': 5,
-    'y_dim': 5,
-    's_dim': 3,
+    'dim_z': 5,
+    'dim_y': 5,
+    'dim_s': 3,
 }
 
 
 hivae = HIVAE.HIVAE(types_dict,network_dict,network_path)
 
 hivae.train(df_train,epochs=200,results_path=results_path)
-hivae.train(df_test,results_path=results_path)
+#hivae.train(df_test,results_path=results_path)
 
