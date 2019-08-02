@@ -3,7 +3,7 @@ import read_functions
 import HIVAE
 
 dataset_name = 'Cardiology'
-dataset_path = '/data/projects/vectorisation/HI-VAE/data/Cardiology/'
+dataset_path = '/data/projects/vectorisation/HI-VAE/data/Cardiology'
 train_file = '{}/train_data.csv'.format(dataset_path)
 test_file  = '{}/test_data.csv'.format(dataset_path)
 
@@ -36,6 +36,6 @@ network_dict = {
 
 hivae = HIVAE.HIVAE(types_dict,network_dict,network_path)
 
-hivae.train(df_train,epochs=200,true_miss_mask=None,results_path)
-hivae.train(df_test,true_miss_mask=None,results_path)
+hivae.train(df_train,results_path,epochs=200,true_miss_mask=None)
+hivae.train(df_test,results_path,true_miss_mask=None)
 

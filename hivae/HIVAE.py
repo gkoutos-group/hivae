@@ -207,7 +207,7 @@ class HIVAE():
 
 
 
-    def training(self,traindata,epochs=200,batchsize=1000,miss_mask=None,true_miss_mask=None,results_path='./results'):
+    def training(self,traindata,results_path='./results',epochs=200,batchsize=1000,miss_mask=None,true_miss_mask=None):
         train = self._train(traindata,self.types_dict,miss_mask,true_miss_mask,epochs,batchsize)
         # Display logs per epoch step
         '''if epoch % display == 0:
@@ -268,7 +268,7 @@ class HIVAE():
 
 
 
-    def testing(self,testdata,batchsize = 1000000,result_path):
+    def testing(self,testdata,result_path='./results_test/',batchsize = 1000000,):
         test = self._train(1,batchsize,self.types_dict)
 
         '''# Display logs per epoch step
