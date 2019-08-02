@@ -4,8 +4,8 @@ import HIVAE
 
 dataset_name = 'Cardiology'
 dataset_path = '/data/projects/vectorisation/HI-VAE/data/Cardiology/'
-train_file = '{}/train_data.csv'.format(dataset_path)
-test_file  = '{}/test_data.csv'.format(dataset_path)
+train_file = '{}/data_train.csv'.format(dataset_path)
+test_file  = '{}/data_train.csv'.format(dataset_path)
 
 df_train = pd.read_csv(train_file)
 df_test  = pd.read_csv(test_file)
@@ -27,7 +27,7 @@ types_dict = {
 
 network_dict = {
     'batch_size' : 32,
-    'model': 'model_HIVAE_inputDropout',
+    'model_name': 'model_HIVAE_inputDropout',
     'z_dim': 5,
     'y_dim': 5,
     's_dim': 3,
@@ -36,6 +36,6 @@ network_dict = {
 
 hivae = HIVAE.HIVAE(types_dict,network_dict,network_path)
 
-hivae.train(df_train,epochs=200,true_miss_mask=None,results_path)
-hivae.train(df_test,true_miss_mask=None,results_path)
+hivae.train(df_train,epochs=200,results_path=results_path)
+hivae.train(df_test,results_path=results_path)
 
