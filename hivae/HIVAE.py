@@ -8,21 +8,56 @@ import read_functions
 import os
 import csv
 
-class HIVAE():
-    def __init__(self,miss_file = None,true_miss_file = None,types_dict = {'AGE':'count,1','SEX':'cat,2,2','BMI':'pos,1','BP':'pos,1','S1':'pos,1','S2':'pos,1','S3':'pos,1','S4':'pos,1','S5':'pos,1','S6':'pos,1','Y':'pos,1'},network_dict ={'batch_size': 32,'model':'model_HIVAE_inputDropout','z_dim': 5,'y_dim':5,'s_dim': 3,'mask':1},networkl_path = './models'):
-        self.model_name = network_dict['model_name']
-        self.m_perc = 0
-        self.mask = network_dict['mask']
-        self.types_dict = types_dict
-        self.save = 1000
-        self.dim_s= network_dict['dim_s']
-        self.dim_z = network_dict['dim_z']
-        self.dim_y = network_dict['dim_y']
 
+def saveGet(aHash,aKey,aDefault):
+    try:
+        return aHash[aKey]
+    except:
+        pass
+    return aDefault
+
+class HIVAE():
+    def __init__(self,
+                 types_dict = {
+                     'AGE':'count,1',
+                     'SEX':'cat,2,2',
+                     'BMI':'pos,1',
+                     'BP':'pos,1',
+                     'S1':'pos,1',
+                     'S2':'pos,1',
+                     'S3':'pos,1',
+                     'S4':'pos,1',
+                     'S5':'pos,1',
+                     'S6':'pos,1',
+                     'Y':'pos,1'
+                 },
+                 network_dict = {
+                     'batch_size': 32,
+                     'model':'model_HIVAE_inputDropout',
+                     'z_dim': 5,
+                     'y_dim':5,
+                     's_dim': 3,
+                     'mask':1
+                 },
+                 networkl_path = './models', # network_path???
+                 miss_file = None, #ak: why?
+                 true_miss_file = None, #ak: why?
+    ):
+        self.model_name = network_dict['model_name']
+        self.m_perc     = 0
+        self.mask       = saveGet(network_dict,'mask',None)
+        self.types_dict = types_dict
+        self.save       = 1000 # parameter?
+        self.dim_s      = saveGet(network_dict,'dim_s',None) 
+        self.dim_z      = saveGet(network_dict,'dim_z',None) 
+        self.dim_y      = saveGet(network_dict,'dim_y',None) 
+
+        
         self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(self.training()[1]))
         # Create a directoy for the save file
         if not os.path.exists(networkl_path + self.savefile):
             os.makedirs('./saved_networks/' + self.savefile)
+
         self.network_file_name = networkl_path + self.savefile  + '.ckpt'
         self.log_file_name = networkl_path + self.savefile + '/log_file_' + self.savefile + '.txt'
 
@@ -207,7 +242,7 @@ class HIVAE():
 
 
 
-    def training(self,traindata,epochs=200,batchsize=1000,miss_mask=None,true_miss_mask=None,results_path='./results'):
+    def train(self,traindata,epochs=200,batchsize=1000,miss_mask=None,true_miss_mask=None,results_path='./results'):
         train = self._train(traindata,self.types_dict,miss_mask,true_miss_mask,epochs,batchsize)
         # Display logs per epoch step
         '''if epoch % display == 0:
@@ -268,7 +303,7 @@ class HIVAE():
 
 
 
-    def testing(self,testdata,batchsize = 1000000,result_path):
+    def test(self,testdata,result_path,batchsize = 1000000):
         test = self._train(1,batchsize,self.types_dict)
 
         '''# Display logs per epoch step
