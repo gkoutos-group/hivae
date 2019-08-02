@@ -51,8 +51,6 @@ class HIVAE():
         self.dim_s      = saveGet(network_dict,'dim_s',None) 
         self.dim_z      = saveGet(network_dict,'dim_z',None) 
         self.dim_y      = saveGet(network_dict,'dim_y',None) 
-
-        print('self.dim_s = {}'.format())
         
 
         ###ak: not sure why the training method is called while constructing the string
