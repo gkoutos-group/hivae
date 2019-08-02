@@ -52,8 +52,10 @@ class HIVAE():
         self.dim_z      = saveGet(network_dict,'dim_z',None) 
         self.dim_y      = saveGet(network_dict,'dim_y',None) 
 
-        
-        self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(self.training()[1]))
+
+        ###ak: not sure why the training method is called while constructing the string
+        #self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(self.training()[1]))
+        self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(saveGet(network_dict,'batch_size','batch_size_unkown')))
         # Create a directoy for the save file
         if not os.path.exists(networkl_path + self.savefile):
             os.makedirs('./saved_networks/' + self.savefile)
