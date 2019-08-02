@@ -19,17 +19,17 @@ def saveGet(aHash,aKey,aDefault):
 class HIVAE():
     def __init__(self,
                  types_dict = {
-                     'AGE':'count,1',
-                     'SEX':'cat,2,2',
-                     'BMI':'pos,1',
-                     'BP':'pos,1',
-                     'S1':'pos,1',
-                     'S2':'pos,1',
-                     'S3':'pos,1',
-                     'S4':'pos,1',
-                     'S5':'pos,1',
-                     'S6':'pos,1',
-                     'Y':'pos,1'
+                     'AGE':('count',1,),
+                     'SEX':('cat',2,2),
+                     'BMI':('pos',1,),
+                     'BP':('pos',1,),
+                     'S1':('pos',1,),
+                     'S2':('pos',1,),
+                     'S3':('pos',1,),
+                     'S4':('pos',1,),
+                     'S5':('pos',1,),
+                     'S6':('pos',1,),
+                     'Y':('pos',1,)
                  },
                  network_dict = {
                      'batch_size': 32,
@@ -39,10 +39,10 @@ class HIVAE():
                      's_dim': 3,#ak: sure????
                      'mask':1
                  },
-                 networkl_path = './models', # network_path???
-                 miss_file = None, #ak: why?
-                 true_miss_file = None, #ak: why?
-    ):
+                 network_path = './models',  # network_path???
+                 miss_file = None,  #ak: why?
+                 true_miss_file = None  #ak: why?
+                 ):
         self.model_name = network_dict['model_name']
         self.m_perc     = 0
         self.mask       = saveGet(network_dict,'mask',None)
@@ -58,11 +58,11 @@ class HIVAE():
         self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(saveGet(network_dict,'batch_size','batch_size_unkown')))
         # Create a directoy for the save file
 
-        if not os.path.exists(networkl_path + self.savefile):
-            os.makedirs((networkl_path + self.savefile)
+        if not os.path.exists(network_path + self.savefile):
+            os.makedirs((network_path + self.savefile))
 
-        self.network_file_name = networkl_path + self.savefile  + '.ckpt'
-        self.log_file_name = networkl_path + self.savefile + '/log_file_' + self.savefile + '.txt'
+        self.network_file_name = network_path + self.savefile  + '.ckpt'
+        self.log_file_name = network_path + self.savefile + '/log_file_' + self.savefile + '.txt'
 
     def _initialize_net(self,types_dict,batch_size):
         if self.types_dict:
