@@ -74,7 +74,7 @@ class HIVAE():
 
 
     def _train(self,traindata,typesdict,miss_file=None,true_miss_file=None,epochs=100,batchsize=1000):
-        train_data, types_dict, miss_mask, true_miss_mask, n_samples = read_functions.read_data_df(traindata,
+        train_data, types_dict, miss_mask, true_miss_mask, n_samples = read_functions.read_data_df_as_input(traindata,
                                                                                                 typesdict,
                                                                                                 miss_file,
                                                                                                 true_miss_file)
