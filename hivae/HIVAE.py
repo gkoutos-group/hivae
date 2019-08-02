@@ -57,8 +57,9 @@ class HIVAE():
         #self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(self.training()[1]))
         self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(saveGet(network_dict,'batch_size','batch_size_unkown')))
         # Create a directoy for the save file
+
         if not os.path.exists(networkl_path + self.savefile):
-            os.makedirs('./saved_networks/' + self.savefile)
+            os.makedirs((networkl_path + self.savefile)
 
         self.network_file_name = networkl_path + self.savefile  + '.ckpt'
         self.log_file_name = networkl_path + self.savefile + '/log_file_' + self.savefile + '.txt'
