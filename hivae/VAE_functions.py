@@ -13,15 +13,23 @@ import numpy as np
 
 
 def place_holder_types(types_description, batch_size):
-       
-    
-    #Read the types of the data from the files
-    with open(types_file) as f:
-        types_list = [{k: v for k, v in row.items()}
-        for row in csv.DictReader(f, skipinitialspace=True)]
 
-    print(types_list)
-    stop
+    print(types_description)
+    types_list = None
+    # test whether the types are passed as a dlist - if not assume it is a file which was supplied
+    if type(types_description) != type([]):
+        
+        #Read the types of the data from the files
+        with open(types_description) as f:
+            types_list = [{k: v for k, v in row.items()}
+            for row in csv.DictReader(f, skipinitialspace=True)]
+    # else:
+    #     types_list = [{'type':str(x[1]),'dim':str(x[2]),'nclass': x[3] and str(x[3]) or ''} for x in types_description]
+    # for now - assume that we already have a list with the parsed information
+    else:
+        types_list = types_description
+        
+            
     #Create placeholders for every data type, with appropriate dimensions
     batch_data_list = []
     for i in range(len(types_list)):
@@ -199,7 +207,8 @@ def z_distribution_GMM(samples_s, z_dim, reuse):
     return mean_pz, log_var_pz
 
 def y_partition(samples_y, types_list, y_dim_partition):
-    
+    # print(y_dim_partition)
+    # print(types_list)
     grouped_samples_y = []
     #First element must be 0 and the length of the partition vector must be len(types_dict)+1
     if len(y_dim_partition) != len(types_list):

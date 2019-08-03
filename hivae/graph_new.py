@@ -6,13 +6,14 @@ Created on Tue Jan 23 15:49:15 2018
 Graph definition for all models
 
 @author: anazabal, olmosUC3M, ivaleraM
+@changes: athro
 """
 
 import tensorflow as tf
 import numpy as np
 import VAE_functions
 
-def HVAE_graph(model_name, types_file, batch_size, learning_rate=1e-3, z_dim=2, y_dim=1, s_dim=2, y_dim_partition=[]):
+def HVAE_graph(model_name, types_description, batch_size, learning_rate=1e-3, z_dim=2, y_dim=1, s_dim=2, y_dim_partition=[]):
     
     #We select the model for the VAE
     print('[*] Importing model: ' + model_name)
@@ -20,7 +21,7 @@ def HVAE_graph(model_name, types_file, batch_size, learning_rate=1e-3, z_dim=2, 
     
     #Load placeholders
     print('[*] Defining placeholders')
-    batch_data_list, batch_data_list_observed, miss_list, tau, tau2, types_list = VAE_functions.place_holder_types(types_file, batch_size)
+    batch_data_list, batch_data_list_observed, miss_list, tau, tau2, types_list = VAE_functions.place_holder_types(types_description, batch_size)
     
     #Batch normalization of the data
     X_list, normalization_params = VAE_functions.batch_normalization(batch_data_list_observed, types_list, miss_list)

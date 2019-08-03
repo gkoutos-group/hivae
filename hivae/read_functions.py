@@ -12,19 +12,41 @@ import os
 import scipy.io as sc
 from sklearn.metrics import mean_squared_error
 
-def read_data_df_as_input(datadf, types_dict_dic, miss_file, true_miss):
-    types_dict = [{'type':x[0],'dim':x[1],'nclass':x[2]} for x in types_dict_dic.values()]
+
+def get_types_list(types_description):
+    types_list = None
+    # test whether the types are passed as a list - if not assume it is a file which was supplied
+    if type(types_description) != type([]):
+        #Read the types of the data from the files
+        with open(types_description) as f:
+            types_list = [{k: v for k, v in row.items()}
+            for row in csv.DictReader(f, skipinitialspace=True)]
+    else:
+        try:
+            types_description[0]['type']
+            types_list = types_description
+        except:
+            types_list = [{'attribute_name':str(x[0]),'type':str(x[1]),'dim':str(x[2]),'nclass': x[3] and str(x[3]) or ''} for x in types_description]
+            pass
+    return types_list
+
+
+def read_data_df_as_input(datadf, types_description, miss_file, true_miss):
+
+    # moved to extra method
+    types_list = get_types_list(types_description)
+    
     data = np.array(datadf)
     # Sustitute NaN values by something (we assume we have the real missing value mask)
     if true_miss:
         missing_positions = np.array(true_miss)
-        true_miss_mask = np.ones([np.shape(data)[0], len(types_dict)])
+        true_miss_mask = np.ones([np.shape(data)[0], len(types_list)])
         true_miss_mask[missing_positions[:, 0] - 1, missing_positions[:, 1] - 1] = 0  # Indexes in the csv start at 1
         data_masked = np.ma.masked_where(np.isnan(data), data)
         # We need to fill the data depending on the given data...
         data_filler = []
-        for i in range(len(types_dict)):
-            if types_dict[i]['type'] == 'cat' or types_dict[i]['type'] == 'ordinal':
+        for i in range(len(types_list)):
+            if types_list[i]['type'] == 'cat' or types_list[i]['type'] == 'ordinal':
                 aux = np.unique(data[:, i])
                 data_filler.append(aux[0])  # Fill with the first element of the cat (0, 1, or whatever)
             else:
@@ -32,29 +54,29 @@ def read_data_df_as_input(datadf, types_dict_dic, miss_file, true_miss):
 
         data = data_masked.filled(data_filler)
     else:
-        true_miss_mask = np.ones([np.shape(data)[0], len(types_dict)])  # It doesn't affect our data
+        true_miss_mask = np.ones([np.shape(data)[0], len(types_list)])  # It doesn't affect our data
 
     # Construct the data matrices
     data_complete = []
     for i in range(np.shape(data)[1]):
-        if types_dict[i]['type'] == 'cat':
+        if types_list[i]['type'] == 'cat':
             # Get categories
             cat_data = [int(x) for x in data[:, i]]
             categories, indexes = np.unique(cat_data, return_inverse=True)
             # Transform categories to a vector of 0:n_categories
-            new_categories = np.arange(int(types_dict[i]['dim']))
+            new_categories = np.arange(int(types_list[i]['dim']))
             cat_data = new_categories[indexes]
             # Create one hot encoding for the categories
             aux = np.zeros([np.shape(data)[0], len(new_categories)])
             aux[np.arange(np.shape(data)[0]), cat_data] = 1
             data_complete.append(aux)
 
-        elif types_dict[i]['type'] == 'ordinal':
+        elif types_list[i]['type'] == 'ordinal':
             # Get categories
             cat_data = [int(x) for x in data[:, i]]
             categories, indexes = np.unique(cat_data, return_inverse=True)
             # Transform categories to a vector of 0:n_categories
-            new_categories = np.arange(int(types_dict[i]['dim']))
+            new_categories = np.arange(int(types_list[i]['dim']))
             cat_data = new_categories[indexes]
             # Create thermometer encoding for the categories
             aux = np.zeros([np.shape(data)[0], 1 + len(new_categories)])
@@ -63,7 +85,7 @@ def read_data_df_as_input(datadf, types_dict_dic, miss_file, true_miss):
             aux = np.cumsum(aux, 1)
             data_complete.append(aux[:, :-1])
 
-        elif types_dict[i]['type'] == 'count':
+        elif types_list[i]['type'] == 'count':
             if np.min(data[:, i]) == 0:
                 aux = data[:, i] + 1
                 data_complete.append(np.transpose([aux]))
@@ -79,7 +101,7 @@ def read_data_df_as_input(datadf, types_dict_dic, miss_file, true_miss):
 
     # Read Missing mask from csv (contains positions of missing values)
     n_samples = np.shape(data)[0]
-    n_variables = len(types_dict)
+    n_variables = len(types_list)
     miss_mask = np.ones([np.shape(data)[0], n_variables])
     # If there is no mask, assume all data is observed
     if miss_file and os.path.isfile(miss_file):
@@ -88,7 +110,7 @@ def read_data_df_as_input(datadf, types_dict_dic, miss_file, true_miss):
             missing_positions = np.array(missing_positions)
         miss_mask[missing_positions[:, 0] - 1, missing_positions[:, 1] - 1] = 0  # Indexes in the csv start at 1
 
-    return data, types_dict, miss_mask, true_miss_mask, n_samples
+    return data, types_list, miss_mask, true_miss_mask, n_samples
 
 def read_data(data_file, types_file, miss_file, true_miss_file):
     # Read types of data from data file
@@ -201,6 +223,7 @@ def next_batch(data, types_dict, miss_mask, batch_size, index_batch):
 
 def samples_concatenation(samples):
     for i, batch in enumerate(samples):
+        #print('DEBUG', i,batch)
         if i == 0:
             samples_x = np.concatenate(batch['x'], 1)
             samples_y = batch['y']
