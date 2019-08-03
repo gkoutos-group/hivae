@@ -69,8 +69,8 @@ class HIVAE():
             sess_HVAE = tf.Graph()
             with sess_HVAE.as_default():
                 tf_nodes = graph_new.HVAE_graph(self.model_name, types_dict, batch_size, learning_rate=1e-3,
-                                                z_dim=self.dim_latent_z, y_dim=self.dim_latent_y,
-                                                s_dim=self.dim_latent_s, y_dim_partition=self.dim_latent_y)
+                                                z_dim=self.dim_z, y_dim=self.dim_y,
+                                                s_dim=self.dim_s, y_dim_partition=self.dim_y)
                 return tf_nodes,sess_HVAE
 
 
@@ -83,7 +83,7 @@ class HIVAE():
         n_batches = int(np.floor(np.shape(traindata)[0] / batchsize))
         miss_mask = np.multiply(miss_mask, true_miss_mask)
 
-        with tf.Session(graph=self._iniatilze_net(types_dict,batchsize)[1]) as session:
+        with tf.Session(graph=self._initialize_net(types_dict,batchsize)[1]) as session:
 
             # Add ops to save and restore all the variables.
             saver = tf.train.Saver()
@@ -248,11 +248,11 @@ class HIVAE():
     def train(self,traindata,epochs=200,batchsize=1000,miss_mask=None,true_miss_mask=None,results_path='./results'):
         train = self._train(traindata,self.types_dict,miss_mask,true_miss_mask,epochs,batchsize)
         # Display logs per epoch step
-        '''if epoch % display == 0:
-            print_loss(epoch, train.start_time, train.avg_loss / n_batches, avg_test_loglik, avg_KL_s / n_batches,
-                       avg_KL_z / n_batches)
-            print('Test error mode: ' + str(np.round(np.mean(train.error_test_mode), 3)))
-            print("")'''
+        # if epoch % display == 0:
+        #     print_loss(epoch, train.start_time, train.avg_loss / n_batches, avg_test_loglik, avg_KL_s / n_batches,
+        #                avg_KL_z / n_batches)
+        #     print('Test error mode: ' + str(np.round(np.mean(train.error_test_mode), 3)))
+        #     print("")
 
 
         # Compute train and test loglik per variables
