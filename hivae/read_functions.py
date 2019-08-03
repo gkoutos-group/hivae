@@ -82,7 +82,7 @@ def read_data_df_as_input(datadf, types_dict_dic, miss_file, true_miss):
     n_variables = len(types_dict)
     miss_mask = np.ones([np.shape(data)[0], n_variables])
     # If there is no mask, assume all data is observed
-    if os.path.isfile(miss_file):
+    if miss_file and os.path.isfile(miss_file):
         with open(miss_file, 'r') as f:
             missing_positions = [[int(x) for x in rec] for rec in csv.reader(f, delimiter=',')]
             missing_positions = np.array(missing_positions)
