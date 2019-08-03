@@ -11,13 +11,17 @@ import tensorflow as tf
 import loglik_models_missing_normalize
 import numpy as np
 
-def place_holder_types(types_file, batch_size):
+
+def place_holder_types(types_description, batch_size):
+       
     
     #Read the types of the data from the files
     with open(types_file) as f:
         types_list = [{k: v for k, v in row.items()}
         for row in csv.DictReader(f, skipinitialspace=True)]
-        
+
+    print(types_list)
+    stop
     #Create placeholders for every data type, with appropriate dimensions
     batch_data_list = []
     for i in range(len(types_list)):
