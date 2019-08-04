@@ -145,13 +145,15 @@ class HIVAE():
             saver = tf.train.Saver()
         
             if restore_session:
-                saver.restore(session, network_file_name)
+                saver.restore(session, self.network_file_name)
                 print("Model restored.")
             else:
                 print('Initizalizing Variables ...')
                 tf.global_variables_initializer().run()
     
             # train_or_test == True - training
+            training_phase  = train_or_test
+            testing_phase   = not train_or_test
             if train_or_test: # 
                 print('Training the HVAE ...')
         
@@ -167,6 +169,7 @@ class HIVAE():
                 for epoch in range(epochs):
                     avg_loss = 0.
                     avg_KL_s = 0.
+                    avg_KL_y = 0.
                     avg_KL_z = 0.
                     samples_list = []
                     p_params_list = []
@@ -175,15 +178,17 @@ class HIVAE():
                     log_p_x_missing_total = []
             
                     # Annealing of Gumbel-Softmax parameter
-                    tau = np.max([1.0 - 0.01*epoch,1e-3])
+                    tau = None
+                    if training_phase:
+                        tau = np.max([1.0 - 0.01*epoch,1e-3])
+                    elif testing_phase:
+                        tau = 1e-3
                     #            tau = 1e-3
                     tau2 = np.min([0.001*epoch,1.0])
+
             
                     #Randomize the data in the mini-batches
                     random_perm = np.random.permutation(range(np.shape(train_data)[0]))
-                    # print('type(train_data) = {}'.format(type(train_data)))
-                    # print('train_data = \n{}'.format(train_data))
-                
                     train_data_aux = train_data[random_perm,:]
                     miss_mask_aux = miss_mask[random_perm,:]
                     true_miss_mask_aux = true_miss_mask[random_perm,:]
@@ -202,15 +207,19 @@ class HIVAE():
                         feedDict[tf_nodes['miss_list']] = miss_list
                         feedDict[tf_nodes['tau_GS']] = tau
                         feedDict[tf_nodes['tau_var']] = tau2
-
-                        #print('type(feedDict) = {}'.format(type(feedDict)))
-                        #print('feedDict = \n{}'.format(feedDict))
                     
                         #Running VAE
-                        _,loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params  = session.run([tf_nodes['optim'], tf_nodes['loss_re'], tf_nodes['KL_z'], tf_nodes['KL_s'], tf_nodes['samples'],
+                        loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params = None,None,None,None,None,None,None,None
+                        if training_phase:
+                            _,loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params  = session.run([tf_nodes['optim'], tf_nodes['loss_re'], tf_nodes['KL_z'], tf_nodes['KL_s'], tf_nodes['samples'],
                                                                                                                tf_nodes['log_p_x'], tf_nodes['log_p_x_missing'],tf_nodes['p_params'],tf_nodes['q_params']],
                                                                                                               feed_dict=feedDict)
-                
+                        elif testing_phase:
+                            loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params  = session.run([tf_nodes['loss_re'], tf_nodes['KL_z'], tf_nodes['KL_s'], tf_nodes['samples'],
+                                            tf_nodes['log_p_x'], tf_nodes['log_p_x_missing'],tf_nodes['p_params'],tf_nodes['q_params']],
+                                            feed_dict=feedDict)
+
+
                         samples_test,log_p_x_test,log_p_x_missing_test,test_params  = session.run([tf_nodes['samples_test'],tf_nodes['log_p_x_test'],tf_nodes['log_p_x_missing_test'],tf_nodes['test_params']],
                                                                                                       feed_dict=feedDict)
                 
@@ -230,11 +239,23 @@ class HIVAE():
                 
                     #Concatenate samples in arrays
                     s_total, z_total, y_total, est_data = read_functions.samples_concatenation(samples_list)
-            
+                    # print('AK-DEBUG')
+                    # print(len(train_data_aux))
+                    # print('AK-DEBUG')
                     #Transform discrete variables back to the original values
+                    #ak: lost examples when batch_size and number of variables are not modulus 0
                     train_data_transformed = read_functions.discrete_variables_transformation(train_data_aux[:n_batches*self.batch_size,:], self.types_list)
+                    #ak-should-be: train_data_transformed = read_functions.discrete_variables_transformation(train_data_aux, self.types_list)
+                    # print('AK-DEBUG')
+                    # print(n_batches)
+                    # print(n_batches*self.batch_size)
+                    # print(n_batches*self.batch_size)
+                    # print('train_data_transformed',len(train_data_transformed))
+                    # print('AK-DEBUG')
                     est_data_transformed = read_functions.discrete_variables_transformation(est_data, self.types_list)
+                    #ak: lost examples when batch_size and number of variables are not modulus 0
                     est_data_imputed = read_functions.mean_imputation(train_data_transformed, miss_mask_aux[:n_batches*self.batch_size,:], self.types_list)
+                    #ak-should-be: est_data_imputed = read_functions.mean_imputation(train_data_transformed, miss_mask_aux, self.types_list)
             
                     #est_data_transformed[np.isinf(est_data_transformed)] = 1e20
             
@@ -250,6 +271,11 @@ class HIVAE():
                     #Compute mean and mode of our loglik models
                     loglik_mean, loglik_mode = read_functions.statistics(p_params_complete['x'],self.types_list)
                     #            loglik_mean[np.isinf(loglik_mean)] = 1e20
+                    # print('AK-DEBUG')
+                    # print('p_params_complete["x"]',len(p_params_complete['x']))
+                    # print('loglik_mean',len(loglik_mean))
+                    # print('loglik_mode',len(loglik_mode))
+                    # print('AK-DEBUG')
 
                     # print('train_data_transformed',type(train_data_transformed))
                     # print('train_data_transformed',train_data_transformed.shape)
@@ -260,10 +286,22 @@ class HIVAE():
                     # print('n_batches',n_batches)
                         
                     #Try this for the errors
+                    #ak: lost examples when batch_size and number of variables are not modulus 0
                     error_train_mean, error_test_mean = read_functions.error_computation(train_data_transformed, loglik_mean, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
                     error_train_mode, error_test_mode = read_functions.error_computation(train_data_transformed, loglik_mode, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
                     error_train_samples, error_test_samples = read_functions.error_computation(train_data_transformed, est_data_transformed, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
                     error_train_imputed, error_test_imputed = read_functions.error_computation(train_data_transformed, est_data_imputed, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
+
+                    # print('AK-DEBUG')
+                    # print('train_data_transformed',len(train_data_transformed))
+                    # print('loglik_mean',len(loglik_mean))
+                    # print('miss_mask_aux',len(miss_mask_aux))
+                    # print('AK-DEBUG')
+                    #ak-should-be: train_data_transformed, loglik_mean, self.types_list, miss_mask_aux
+                    #ak-should-be: error_train_mean, error_test_mean = read_functions.error_computation(train_data_transformed, loglik_mean, self.types_list, miss_mask_aux)
+                    #ak-should-be: error_train_mode, error_test_mode = read_functions.error_computation(train_data_transformed, loglik_mode, self.types_list, miss_mask_aux)
+                    #ak-should-be: error_train_samples, error_test_samples = read_functions.error_computation(train_data_transformed, est_data_transformed, self.types_list, miss_mask_aux)
+                    #ak-should-be: error_train_imputed, error_test_imputed = read_functions.error_computation(train_data_transformed, est_data_imputed, self.types_list, miss_mask_aux)
                     
                     #Compute test-loglik from log_p_x_missing
                     log_p_x_total = np.transpose(np.concatenate(log_p_x_total,1))
@@ -310,6 +348,29 @@ class HIVAE():
             self.save_data(self.results_path,'{}_test_error.csv'.format(self.experiment_name),error_test_mode_global)
             #ak: hack for now - as entries are not lists 
             self.save_data(self.results_path,'{}_testloglik.csv'.format(self.experiment_name),[[x] for x in testloglik_epoch])
+            
+            if testing_phase:
+                #Compute the data reconstruction
+                print('AK-DEBUG')
+                print(n_batches)
+                print(n_batches*self.batch_size)
+                print(len(miss_mask_aux[:n_batches*self.batch_size,:]))
+                print(len(train_data_transformed))
+                print('AK-DEBUG')
+            
+                data_reconstruction = train_data_transformed * miss_mask_aux[:n_batches*self.batch_size,:] + \
+                  np.round(loglik_mode,3) * (1 - miss_mask_aux[:n_batches*self.batch_size,:])
+                train_data_transformed = train_data_transformed[np.argsort(random_perm)]
+                data_reconstruction = data_reconstruction[np.argsort(random_perm)]
+                self.save_data(self.results_path,'{}_data_reconstruction.csv'.format(self.experiment_name),data_reconstruction)
+                self.save_data(self.results_path,'{}_data_true.csv'.format(self.experiment_name),train_data_transformed)
+
+                # with open('Results/' + args.save_file + '/' + args.save_file + '_data_reconstruction.csv', "w") as f:
+                #     writer = csv.writer(f)
+                #     writer.writerows(data_reconstruction)
+                # with open('Results/' + args.save_file + '/' + args.save_file + '_data_true.csv', "w") as f:
+                #     writer = csv.writer(f)
+                #     writer.writerows(train_data_transformed)
             
             # self.save_data(self.results_path,'{}_'.format(self.experiment_name),)
             # #Saving needed variables in csv

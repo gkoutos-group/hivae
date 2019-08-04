@@ -17,8 +17,16 @@ train_file = '{}/data_train.csv'.format(dataset_path)
 test_file  = '{}/data_train.csv'.format(dataset_path)
 print(train_file)
 
-train_data = pd.read_csv(train_file)
-test_data  = pd.read_csv(test_file)
+train_data_df = pd.read_csv(train_file)
+#print(len(train_data_df))
+
+#test_data  = pd.read_csv(test_file)
+test_data = train_data_df.sample(frac=0.3,replace=False,random_state=33)
+train_data = train_data_df.loc[set(train_data_df.index)-set(test_data.index)]
+print(len(train_data))
+print(list(train_data.index[:20]))
+print(len(test_data))
+print(list(test_data.index[:20]))
 
 types_list = [
     ('AGE','count',1,None),
@@ -45,6 +53,6 @@ network_dict = {
 
 hivae = HIVAE_AK.HIVAE(types_list,network_dict,network_path,results_path)
 
-hivae.training_ak(train_data,epochs=20,results_path=results_path)
-#hivae.train(df_test,results_path=results_path)
+hivae.training_ak(train_data,epochs=5,results_path=results_path)
+hivae.training_ak(test_data,epochs=1,results_path=results_path,train_or_test=False,restore_session=True)
 

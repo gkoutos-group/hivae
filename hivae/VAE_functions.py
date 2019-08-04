@@ -14,7 +14,7 @@ import numpy as np
 
 def place_holder_types(types_description, batch_size):
 
-    print(types_description)
+    #print(types_description)
     types_list = None
     # test whether the types are passed as a dlist - if not assume it is a file which was supplied
     if type(types_description) != type([]):

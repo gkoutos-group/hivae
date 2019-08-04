@@ -37,11 +37,11 @@ def HVAE_graph(model_name, types_description, batch_size, learning_rate=1e-3, z_
     print('[*] Defining Encoder...')
     samples, q_params = model.encoder(X_list, miss_list, batch_size, z_dim, s_dim, tau)
     
-    print('debug ' * 10)
-    print(samples)
-    print('- ' * 10)
-    print(q_params)
-    print('debug ' * 10)
+    # print('debug ' * 10)
+    # print(samples)
+    # print('- ' * 10)
+    # print(q_params)
+    # print('debug ' * 10)
 
     
     print('[*] Defining Decoder...')
