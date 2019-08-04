@@ -1,2 +1,0 @@
-model_checkpoint_path: "model_HIVAE_inputDropout_Wine_Missing20_1_z2_y5_s10_batch100.ckpt"
-all_model_checkpoint_paths: "model_HIVAE_inputDropout_Wine_Missing20_1_z2_y5_s10_batch100.ckpt"
