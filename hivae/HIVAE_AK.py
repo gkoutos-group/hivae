@@ -59,8 +59,7 @@ class HIVAE():
 
 
     def print_loss(self,epoch, start_time, avg_loss, avg_test_loglik, avg_KL_s, avg_KL_z):
-        print("Epoch: [%2d]  time: %4.4f, train_loglik: %.8f, KL_z: %.8f, KL_s: %.8f, ELBO: %.8f, Test_loglik: %.8f"
-          % (epoch, time.time() - start_time, avg_loss, avg_KL_z, avg_KL_s, avg_loss-avg_KL_z-avg_KL_s, avg_test_loglik))
+        print('Epoch: {:4d}\ttime: {:4.2f}\ttrain_loglik: {:5.2f}\tKL_z: {:5.2f}\tKL_s: {:5.2f}\tELBO: {:5.2f}\tTest_loglik: {:5.2f}'.format(epoch, time.time() - start_time, avg_loss, avg_KL_z, avg_KL_s, avg_loss-avg_KL_z-avg_KL_s, avg_test_loglik))
 
     def training_ak(self,training_data,epochs=200,learning_rate=1e-3,results_path='./',restore=False,train_or_test=True,restore_session=False):
 
@@ -188,64 +187,78 @@ class HIVAE():
                         avg_KL_s += np.mean(KL_s)
                         avg_KL_z += np.mean(KL_z)
                 
-                        #Concatenate samples in arrays
-                        s_total, z_total, y_total, est_data = read_functions.samples_concatenation(samples_list)
+                    #Concatenate samples in arrays
+                    s_total, z_total, y_total, est_data = read_functions.samples_concatenation(samples_list)
             
-                        #Transform discrete variables back to the original values
-                        train_data_transformed = read_functions.discrete_variables_transformation(train_data_aux[:n_batches*self.batch_size,:], self.types_list)
-                        est_data_transformed = read_functions.discrete_variables_transformation(est_data, self.types_list)
-                        est_data_imputed = read_functions.mean_imputation(train_data_transformed, miss_mask_aux[:n_batches*self.batch_size,:], self.types_list)
+                    #Transform discrete variables back to the original values
+                    train_data_transformed = read_functions.discrete_variables_transformation(train_data_aux[:n_batches*self.batch_size,:], self.types_list)
+                    est_data_transformed = read_functions.discrete_variables_transformation(est_data, self.types_list)
+                    est_data_imputed = read_functions.mean_imputation(train_data_transformed, miss_mask_aux[:n_batches*self.batch_size,:], self.types_list)
             
-                        #est_data_transformed[np.isinf(est_data_transformed)] = 1e20
+                    #est_data_transformed[np.isinf(est_data_transformed)] = 1e20
             
-                        #Create global dictionary of the distribution parameters
-                        p_params_complete = read_functions.p_distribution_params_concatenation(p_params_list, self.types_list, self.dim_z, self.dim_s)
-                        q_params_complete = read_functions.q_distribution_params_concatenation(q_params_list,  self.dim_z, self.dim_s)
+                    #Create global dictionary of the distribution parameters
+                    p_params_complete = read_functions.p_distribution_params_concatenation(p_params_list, self.types_list, self.dim_z, self.dim_s)
+                    q_params_complete = read_functions.q_distribution_params_concatenation(q_params_list,  self.dim_z, self.dim_s)
             
-                        #Number of clusters created
-                        cluster_index = np.argmax(q_params_complete['s'],1)
-                        cluster = np.unique(cluster_index)
-                        print('Clusters: ' + str(len(cluster)))
+                    #Number of clusters created
+                    cluster_index = np.argmax(q_params_complete['s'],1)
+                    cluster = np.unique(cluster_index)
+                    print('Clusters: ' + str(len(cluster)))
             
-                        #Compute mean and mode of our loglik models
-                        loglik_mean, loglik_mode = read_functions.statistics(p_params_complete['x'],self.types_list)
-                        #            loglik_mean[np.isinf(loglik_mean)] = 1e20
-                
-                        #Try this for the errors
-                        error_train_mean, error_test_mean = read_functions.error_computation(train_data_transformed, loglik_mean, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
-                        error_train_mode, error_test_mode = read_functions.error_computation(train_data_transformed, loglik_mode, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
-                        error_train_samples, error_test_samples = read_functions.error_computation(train_data_transformed, est_data_transformed, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
-                        error_train_imputed, error_test_imputed = read_functions.error_computation(train_data_transformed, est_data_imputed, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
-                
-                        #Compute test-loglik from log_p_x_missing
-                        log_p_x_total = np.transpose(np.concatenate(log_p_x_total,1))
-                        log_p_x_missing_total = np.transpose(np.concatenate(log_p_x_missing_total,1))
-                        if self.true_miss_file:
-                            log_p_x_missing_total = np.multiply(log_p_x_missing_total,true_miss_mask_aux[:n_batches*self.batch_size,:])
-                            avg_test_loglik = np.sum(log_p_x_missing_total)/np.sum(1.0-miss_mask_aux)
+                    #Compute mean and mode of our loglik models
+                    loglik_mean, loglik_mode = read_functions.statistics(p_params_complete['x'],self.types_list)
+                    #            loglik_mean[np.isinf(loglik_mean)] = 1e20
 
-                        # Display logs per epoch step
-                        if self.display:
-                            self.print_loss(epoch, start_time, avg_loss/n_batches, avg_test_loglik, avg_KL_s/n_batches, avg_KL_z/n_batches)
-                            print('Test error mode: ' + str(np.round(np.mean(error_test_mode),3)))
-                            print("")
+                    # print('train_data_transformed',type(train_data_transformed))
+                    # print('train_data_transformed',train_data_transformed.shape)
+                    # print('loglik_mean',type(loglik_mean))
+                    # print('loglik_mean',loglik_mean.shape)
+                    # print('miss_mask_aux',type(miss_mask_aux))
+                    # print('miss_mask_aux',miss_mask_aux.shape)
+                    # print('n_batches',n_batches)
+                        
+                    #Try this for the errors
+                    error_train_mean, error_test_mean = read_functions.error_computation(train_data_transformed, loglik_mean, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
+                    error_train_mode, error_test_mode = read_functions.error_computation(train_data_transformed, loglik_mode, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
+                    error_train_samples, error_test_samples = read_functions.error_computation(train_data_transformed, est_data_transformed, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
+                    error_train_imputed, error_test_imputed = read_functions.error_computation(train_data_transformed, est_data_imputed, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
+                    
+                    #Compute test-loglik from log_p_x_missing
+                    log_p_x_total = np.transpose(np.concatenate(log_p_x_total,1))
+                    log_p_x_missing_total = np.transpose(np.concatenate(log_p_x_missing_total,1))
+                    if self.true_miss_file:
+                        log_p_x_missing_total = np.multiply(log_p_x_missing_total,true_miss_mask_aux[:n_batches*self.batch_size,:])
+                    avg_test_loglik = 10000.0
+                    if self.miss_file:
+                        avg_test_loglik = np.sum(log_p_x_missing_total)/np.sum(1.0-miss_mask_aux)
+
+                    # Display logs per epoch step
+                    if self.display:
+                        self.print_loss(epoch, start_time, avg_loss/n_batches, avg_test_loglik, avg_KL_s/n_batches, avg_KL_z/n_batches)
+                        # print('Test error mode: ' + str(np.round(np.mean(error_test_mode),3)))
+                        # print("")
                 
-                        #Compute train and test loglik per variables
-                        loglik_per_variable = np.sum(log_p_x_total,0)/np.sum(miss_mask_aux,0)
+                    #Compute train and test loglik per variables
+                    loglik_per_variable = np.sum(log_p_x_total,0)/np.sum(miss_mask_aux,0)
+
+                    #ak: only compute if a missing file was supplied
+                    loglik_per_variable_missing = None
+                    if self.miss_file:
                         loglik_per_variable_missing = np.sum(log_p_x_missing_total,0)/np.sum(1.0-miss_mask_aux,0)
             
-                        #Store evolution of all the terms in the ELBO
-                        loglik_epoch.append(loglik_per_variable)
-                        testloglik_epoch.append(loglik_per_variable_missing)
-                        KL_s_epoch.append(avg_KL_s/n_batches)
-                        KL_z_epoch.append(avg_KL_z/n_batches)
-                        error_train_mode_global.append(error_train_mode)
-                        error_test_mode_global.append(error_test_mode)
+                    #Store evolution of all the terms in the ELBO
+                    loglik_epoch.append(loglik_per_variable)
+                    testloglik_epoch.append(loglik_per_variable_missing)
+                    KL_s_epoch.append(avg_KL_s/n_batches)
+                    KL_z_epoch.append(avg_KL_z/n_batches)
+                    error_train_mode_global.append(error_train_mode)
+                    error_test_mode_global.append(error_test_mode)
             
             
-                        if epoch % self.save == 0:
-                            print('Saving Variables ...')  
-                            save_path = saver.save(session, network_file_name)
+                    if epoch % self.save == 0:
+                        print('Saving Variables ...')  
+                        save_path = saver.save(session, self.network_file_name)
                 
             print('Training Finished ...')
         
