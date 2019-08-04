@@ -15,8 +15,16 @@ import read_functions
 import os
 import csv
 
+def print_error(msg):
+    print('{} - ERROR - {}'.format('*'*20,'*'*20))
+    print(msg)
+    print('{} - ERROR - {}'.format('*'*20,'*'*20))
+    print()
+    
+              
 
-def saveGet(aHash,aKey,aDefault):
+#ak: small method to savely get information from a dictionary
+def save_get(aHash,aKey,aDefault):
     try:
         return aHash[aKey]
     except:
@@ -28,27 +36,32 @@ class HIVAE():
                  types_description,
                  network_dict,
                  network_path     = './models',  # network_path???
+                 results_path     = './results', #ak: included a path for results
                  miss_file        = None,  #ak: why?
                  true_miss_file   = None,  #ak: why?
                  save_every_epoch = 1000,
                  ):
-        self.model_name       = network_dict['model_name']
+        self.model_name       = save_get(network_dict,'model_name','unbkown_model_name')
         self.m_perc           = 0
-        self.mask             = saveGet(network_dict,'mask',None)
+        self.mask             = save_get(network_dict,'mask',None)
         self.types_list       = read_functions.get_types_list(types_description)
         self.save             = 1000 # parameter?
         self.save_every_epoch = save_every_epoch    
-        self.dim_s            = saveGet(network_dict,'dim_s',None) 
-        self.dim_z            = saveGet(network_dict,'dim_z',None) 
-        self.dim_y            = saveGet(network_dict,'dim_y',None)
-        self.batch_size       = saveGet(network_dict,'batch_size',32)
+        self.dim_s            = save_get(network_dict,'dim_s',None) 
+        self.dim_z            = save_get(network_dict,'dim_z',None) 
+        self.dim_y            = save_get(network_dict,'dim_y',None)
+        self.batch_size       = save_get(network_dict,'batch_size',32)
         self.true_miss_file   = true_miss_file
         self.miss_file        = miss_file
+        self.network_path     = network_path
+        self.results_path     = results_path
         self.display          = True
         
         ###ak: not sure why the training method is called while constructing the string
         #self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(self.training()[1]))
-        self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(saveGet(network_dict,'batch_size','batch_size_unkown')))
+        self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(save_get(network_dict,'batch_size','batch_size_unkown')))
+        self.experiment_name = '{}_s{}_z{}_y{}_batch{}'.format(self.model_name,self.dim_s,self.dim_z,self.dim_y,self.batch_size)
+
         # Create a directoy for the save file
 
         if not os.path.exists(network_path + self.savefile):
@@ -60,6 +73,29 @@ class HIVAE():
 
     def print_loss(self,epoch, start_time, avg_loss, avg_test_loglik, avg_KL_s, avg_KL_z):
         print('Epoch: {:4d}\ttime: {:4.2f}\ttrain_loglik: {:5.2f}\tKL_z: {:5.2f}\tKL_s: {:5.2f}\tELBO: {:5.2f}\tTest_loglik: {:5.2f}'.format(epoch, time.time() - start_time, avg_loss, avg_KL_z, avg_KL_s, avg_loss-avg_KL_z-avg_KL_s, avg_test_loglik))
+
+
+    #ak: save the data in a more coherent fashion
+    def save_data(self,the_main_directory,the_path,the_data):
+        dir_present = False
+        try:
+            if not os.path.exists(the_main_directory):
+                os.makedirs(the_main_directory)
+            dir_present = True
+        except:
+            print_error('Could not create path (<<{}>>)'.format(the_main_directory))
+
+        if dir_present:
+            full_file_path = '{}/{}'.format(the_main_directory,the_path)
+            try:
+                with open(full_file_path, 'w') as f:
+                    writer = csv.writer(f)
+                    writer.writerows(the_data)
+            except:
+                print_error('Problens writing data to <<{}>>\n{}'.format(full_file_path,str(the_data)))
+            
+            
+        
 
     def training_ak(self,training_data,epochs=200,learning_rate=1e-3,results_path='./',restore=False,train_or_test=True,restore_session=False):
 
@@ -229,7 +265,7 @@ class HIVAE():
                     log_p_x_missing_total = np.transpose(np.concatenate(log_p_x_missing_total,1))
                     if self.true_miss_file:
                         log_p_x_missing_total = np.multiply(log_p_x_missing_total,true_miss_mask_aux[:n_batches*self.batch_size,:])
-                    avg_test_loglik = 10000.0
+                    avg_test_loglik = 100000  ##  np.finfo(float).max #ak - maximal float number = ugly for printing
                     if self.miss_file:
                         avg_test_loglik = np.sum(log_p_x_missing_total)/np.sum(1.0-miss_mask_aux)
 
@@ -243,7 +279,7 @@ class HIVAE():
                     loglik_per_variable = np.sum(log_p_x_total,0)/np.sum(miss_mask_aux,0)
 
                     #ak: only compute if a missing file was supplied
-                    loglik_per_variable_missing = None
+                    loglik_per_variable_missing =  100000  ##  np.finfo(float).max #ak - maximal float number = ugly for printing
                     if self.miss_file:
                         loglik_per_variable_missing = np.sum(log_p_x_missing_total,0)/np.sum(1.0-miss_mask_aux,0)
             
@@ -261,7 +297,16 @@ class HIVAE():
                         save_path = saver.save(session, self.network_file_name)
                 
             print('Training Finished ...')
-        
+
+            self.save_data(self.results_path,'{}_loglik.csv'.format(self.experiment_name),loglik_epoch)
+            self.save_data(self.results_path,'{}_KL_s.csv'.format(self.experiment_name),np.reshape(KL_s_epoch,[-1,1]))
+            self.save_data(self.results_path,'{}_KL_z.csv'.format(self.experiment_name),np.reshape(KL_z_epoch,[-1,1]))
+            self.save_data(self.results_path,'{}_train_error.csv'.format(self.experiment_name),error_train_mode_global)
+            self.save_data(self.results_path,'{}_test_error.csv'.format(self.experiment_name),error_test_mode_global)
+            #ak: hack for now - as entries are not lists 
+            self.save_data(self.results_path,'{}_testloglik.csv'.format(self.experiment_name),[[x] for x in testloglik_epoch])
+            
+            # self.save_data(self.results_path,'{}_'.format(self.experiment_name),)
             # #Saving needed variables in csv
             # if not os.path.exists('./Results_csv/' + args.save_file):
             #     os.makedirs('./Results_csv/' + args.save_file)

@@ -56,7 +56,7 @@ network_dict = {
 }
 
 
-hivae = HIVAE_AK.HIVAE(types_list,network_dict,network_path)
+hivae = HIVAE_AK.HIVAE(types_list,network_dict,network_path,results_path)
 
 hivae.training_ak(train_data,epochs=200,results_path=results_path)
 #hivae.train(df_test,results_path=results_path)
