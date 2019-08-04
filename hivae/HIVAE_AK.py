@@ -63,12 +63,17 @@ class HIVAE():
         self.experiment_name = '{}_s{}_z{}_y{}_batch{}'.format(self.model_name,self.dim_s,self.dim_z,self.dim_y,self.batch_size)
 
         # Create a directoy for the save file
+        full_network_path = '{}/{}'.format(self.network_path,self.experiment_name)
+        try:
+            if not os.path.exists(full_network_path):
+                os.makedirs(full_network_path)
+        except:
+            print_error('Could not create network path <<{}>>'.format(full_network_path))
+            pass
+        
 
-        if not os.path.exists(network_path + self.savefile):
-            os.makedirs((network_path + self.savefile))
-
-        self.network_file_name = network_path + self.savefile  + '.ckpt'
-        self.log_file_name = network_path + self.savefile + '/log_file_' + self.savefile + '.txt'
+        self.network_file_name = '{}.ckpt'.format(full_network_path) 
+        self.log_file_name = '{}/log_file_{}.txt'.format(full_network_path,self.savefile)
 
 
     def print_loss(self,epoch, start_time, avg_loss, avg_test_loglik, avg_KL_s, avg_KL_z):
@@ -335,8 +340,8 @@ class HIVAE():
             #     writer = csv.writer(f)
             #     writer.writerows(error_test_mode_global)
             
-            # # Save the variables to disk at the end
-            # save_path = saver.save(session, network_file_name) 
+            # Save the variables to disk at the end
+            save_path = saver.save(session, self.network_file_name) 
         
             
 
