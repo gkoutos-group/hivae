@@ -1,6 +1,6 @@
 # hivae
 
-This repository contains the Modular reimplemenation of the Heterogeneous Incomplete Variational Autoendoder model (HI-VAE)written by Alfredo Nazabal (anazabal@turing.ac.uk). It was written in Python, using Tensorflow.
+This repository contains the Modular reimplemenation of the Heterogeneous Incomplete Variational Autoencoder model (HI-VAE)written by Alfredo Nazabal (anazabal@turing.ac.uk). It was written in Python, using Tensorflow.
 
 The details of this model are included in this [paper](https://arxiv.org/abs/1807.03653). Please cite it if you use this code/library for your own research.
 
