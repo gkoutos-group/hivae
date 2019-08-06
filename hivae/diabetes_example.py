@@ -2,6 +2,9 @@ import pandas as pd
 import os,os.path
 import read_functions
 import HIVAE_AK
+import numpy as np
+import pprint
+pprinter = pprint.PrettyPrinter(depth=3)
 
 #data_directory = '/data/projects/vectorisation/HI-VAE/data'
 main_directory = '/Users/karwath/develop/GANs/hivae/hivae'
@@ -76,5 +79,30 @@ network_dict = {
 hivae = HIVAE_AK.HIVAE(types_list,network_dict,network_path,results_path)
 
 hivae.training_ak(train_data,epochs=500,results_path=results_path)
-hivae.training_ak(test_data,epochs=1,results_path=results_path,train_or_test=False,restore_session=True)
+(test_data, test_data_reconstructed, test_data_decoded, test_data_embedded_z, test_data_embedded_s) = hivae.training_ak(test_data,epochs=1,results_path=results_path,train_or_test=False,restore_session=True)
 
+# test_file_5     = '{}/data_test_5.csv'.format(dataset_path)
+# df_test_5 = pd.read_csv(test_file_5,header=-1)
+# (t5_data, t5_data_reconstructed, t5_data_decoded, t5_data_embedded_z_1, t5_data_embedded_s) = hivae.training_ak(df_test_5,epochs=1,results_path=results_path,train_or_test=False,restore_session=True)
+# (t5_data, t5_data_reconstructed, t5_data_decoded, t5_data_embedded_z_2, t5_data_embedded_s) = hivae.training_ak(df_test_5,epochs=1,results_path=results_path,train_or_test=False,restore_session=True)
+# (t5_data, t5_data_reconstructed, t5_data_decoded, t5_data_embedded_z_3, t5_data_embedded_s) = hivae.training_ak(df_test_5,epochs=1,results_path=results_path,train_or_test=False,restore_session=True)
+
+# print('-'*80)
+# for (s1,s2,s3) in list(zip(t5_data_embedded_z_1.tolist(),t5_data_embedded_z_2.tolist(),t5_data_embedded_z_3.tolist())):
+#     print(s1)
+#     print(s2)
+#     print(s3)
+#     print()
+# print('-'*80)
+    
+# print(t5_data_embedded_z_1.tolist())
+# print(t5_data_embedded_z_2.tolist())
+# print(t5_data_embedded_z_3.tolist())
+
+
+pprinter.pprint(np.cov(t5_data_embedded_z_1))
+pprinter.pprint(np.cov(t5_data_embedded_z_2))
+pprinter.pprint(np.cov(t5_data_embedded_z_3))
+
+
+ 
