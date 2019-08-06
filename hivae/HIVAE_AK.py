@@ -109,9 +109,9 @@ class HIVAE():
         
 
     def training_ak(self,training_data,epochs=200,learning_rate=1e-3,results_path='./',restore=False,train_or_test=True,restore_session=False):
-        print('AK-DEBUG')
-        print('len(training_data)',len(training_data))
-        print('AK-DEBUG')
+        # print('AK-DEBUG')
+        # print('len(training_data)',len(training_data))
+        # print('AK-DEBUG')
 
         # train_or_test == True - training
         training_phase  = train_or_test
@@ -336,32 +336,41 @@ class HIVAE():
                     print('Saving Variables ...')  
                     save_path = saver.save(session, self.network_file_name)
                 
-            print('Training Finished ...')
-
-            self.save_data(self.results_path,'{}_loglik.csv'.format(self.experiment_name),loglik_epoch)
-            self.save_data(self.results_path,'{}_KL_s.csv'.format(self.experiment_name),np.reshape(KL_s_epoch,[-1,1]))
-            self.save_data(self.results_path,'{}_KL_z.csv'.format(self.experiment_name),np.reshape(KL_z_epoch,[-1,1]))
-            self.save_data(self.results_path,'{}_train_error.csv'.format(self.experiment_name),error_train_mode_global)
-            self.save_data(self.results_path,'{}_test_error.csv'.format(self.experiment_name),error_test_mode_global)
-            #ak: hack for now - as entries are not lists 
-            self.save_data(self.results_path,'{}_testloglik.csv'.format(self.experiment_name),[[x] for x in testloglik_epoch])
+            if training_phase:
+                print('Training Finished ...')
+                
+                self.save_data(self.results_path,'{}_loglik.csv'.format(self.experiment_name),loglik_epoch)
+                self.save_data(self.results_path,'{}_KL_s.csv'.format(self.experiment_name),np.reshape(KL_s_epoch,[-1,1]))
+                self.save_data(self.results_path,'{}_KL_z.csv'.format(self.experiment_name),np.reshape(KL_z_epoch,[-1,1]))
+                self.save_data(self.results_path,'{}_train_error.csv'.format(self.experiment_name),error_train_mode_global)
+                self.save_data(self.results_path,'{}_test_error.csv'.format(self.experiment_name),error_test_mode_global)
+                #ak: hack for now - as entries are not lists 
+                self.save_data(self.results_path,'{}_testloglik.csv'.format(self.experiment_name),[[x] for x in testloglik_epoch])
             
-            if testing_phase:
+            elif testing_phase:
+                print('Testing Finished ...')
                 #Compute the data reconstruction
-                print('AK-DEBUG')
-                print(n_batches)
-                print(n_batches*batch_size_here)
-                print(len(miss_mask_aux[:n_batches*batch_size_here,:]))
-                print(len(train_data_transformed))
-                print('AK-DEBUG')
+                # print('AK-DEBUG')
+                # print(n_batches)
+                # print(n_batches*batch_size_here)
+                # print(len(miss_mask_aux[:n_batches*batch_size_here,:]))
+                # print(len(train_data_transformed))
+                # print('AK-DEBUG')
             
                 data_reconstruction = train_data_transformed * miss_mask_aux[:n_batches*batch_size_here,:] + \
                   np.round(loglik_mode,3) * (1 - miss_mask_aux[:n_batches*batch_size_here,:])
                 train_data_transformed = train_data_transformed[np.argsort(random_perm)]
+                loglik_mean_reconstructed = loglik_mean[np.argsort(random_perm)]
                 data_reconstruction = data_reconstruction[np.argsort(random_perm)]
                 self.save_data(self.results_path,'{}_data_reconstruction.csv'.format(self.experiment_name),data_reconstruction)
                 self.save_data(self.results_path,'{}_data_true.csv'.format(self.experiment_name),train_data_transformed)
+                self.save_data(self.results_path,'{}_data_loglik_mean_reconstructed.csv'.format(self.experiment_name),loglik_mean_reconstructed)
 
+                df_real        = pd.DataFrame(train_data_transformed)
+                df_loglik_mean = pd.DataFrame(loglik_mean_reconstructed)
+                print('Reconstruction Correlation:')
+                print(df_real.corrwith(df_loglik_mean))
+                
                 # with open('Results/' + args.save_file + '/' + args.save_file + '_data_reconstruction.csv', "w") as f:
                 #     writer = csv.writer(f)
                 #     writer.writerows(data_reconstruction)
@@ -512,13 +521,16 @@ class HIVAE():
                         feed_dict=feedDict)
 
                     samples_test, log_p_x_test, log_p_x_missing_test, test_params = session.run(
-                        [tf_nodes['samples_test'], tf_nodes['log_p_x_test'], tf_nodes['log_p_x_missing_test'],tf_nodes['test_params']],
+                        [tf_nodes['samples_test'],
+                             tf_nodes['log_p_x_test'],
+                        tf_nodes['log_p_x_missing_test'],
+                        tf_nodes['test_params']],
                         feed_dict=feedDict)
                     
                     # summary_writer.add_summary(samples_test, epoch * n_batches + i)
                     # # write out networks structure
-                    # if epoch > 5:
-                    #     tf.train.write_graph(tf.get_default_graph(), os.getcwd(), 'graph.json')
+                    if epoch > 1:
+                        tf.train.write_graph(tf.get_default_graph(), os.getcwd(), 'graph_e{}.json'.format(str(epoch).zfill(3)))
                     #     tf.train.write_graph(tf.get_default_graph(), os.getcwd(), 'graph.txt')
 
                     #     ops = session.graph.get_operations()
@@ -554,11 +566,9 @@ class HIVAE():
                     # Transform discrete variables back to the original values
                     train_data_transformed = read_functions.discrete_variables_transformation(
                         train_data_aux[:n_batches * batchsize, :], self.types_list)
-                        # train_data_aux[:, :], self.types_list)
                     est_data_transformed = read_functions.discrete_variables_transformation(est_data, self.types_list)
                     est_data_imputed = read_functions.mean_imputation(train_data_transformed,
                                                                           miss_mask_aux[:n_batches * batchsize, :],
-                                                                          # miss_mask_aux[:, :],
                                                                           self.types_list)
 
                     #            est_data_transformed[np.isinf(est_data_transformed)] = 1e20

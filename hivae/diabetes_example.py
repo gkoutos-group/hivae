@@ -67,14 +67,14 @@ types_list = [
 network_dict = {
     'batch_size' : 32,
     'model_name': 'model_HIVAE_inputDropout',
-    'dim_z': 5,
-    'dim_y': 5,
+    'dim_z': 7,
+    'dim_y': 10,
     'dim_s': 3,
 }
 
 
 hivae = HIVAE_AK.HIVAE(types_list,network_dict,network_path,results_path)
 
-hivae.training_ak(train_data,epochs=5,results_path=results_path)
+hivae.training_ak(train_data,epochs=500,results_path=results_path)
 hivae.training_ak(test_data,epochs=1,results_path=results_path,train_or_test=False,restore_session=True)
 
