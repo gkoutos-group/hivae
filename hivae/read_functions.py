@@ -11,7 +11,7 @@ import numpy as np
 import os
 import scipy.io as sc
 from sklearn.metrics import mean_squared_error
-
+from pathlib import Path
 
 def get_types_list(types_description):
     types_list = None
@@ -327,10 +327,16 @@ def q_distribution_params_concatenation(params, z_dim, s_dim):
 
 
 def statistics(loglik_params, types_dict):
+    # print('AK-DEBUG-{}'.format(Path(__file__).stem))
+    # print('loglik_params',len(loglik_params[0]))
+    # print('AK-DEBUG-{}\n'.format(Path(__file__).stem))
     loglik_mean = []
     loglik_mode = []
 
     for d, attrib in enumerate(loglik_params):
+        # print('AK-DEBUG-{}'.format(Path(__file__).stem))
+        # print('loglik_mean',len(loglik_mean))
+        # print('AK-DEBUG-{}\n'.format(Path(__file__).stem))
         if types_dict[d]['type'] == 'real':
             # Normal distribution (mean, sigma)
             loglik_mean.append(attrib[0])
@@ -349,6 +355,11 @@ def statistics(loglik_params, types_dict):
             # Categorical and ordinal (mode imputation for both)
             loglik_mean.append(np.reshape(np.argmax(attrib, 1), [-1, 1]))
             loglik_mode.append(np.reshape(np.argmax(attrib, 1), [-1, 1]))
+
+    # print('AK-DEBUG-{}'.format(Path(__file__).stem))
+    # print('loglik_mean',len(loglik_mean))
+    # print('squeeze loglik_mean',len(np.squeeze(loglik_mean)))
+    # print('AK-DEBUG-{}\n'.format(Path(__file__).stem))
 
     return np.transpose(np.squeeze(loglik_mean)), np.transpose(np.squeeze(loglik_mode))
 

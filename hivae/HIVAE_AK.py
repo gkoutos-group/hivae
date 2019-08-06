@@ -5,7 +5,12 @@
 @author: fathyshalaby,athro
 """
 import sys
+# import os
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
+tf.logging.set_verbosity(tf.logging.ERROR)
+import pprint
+pprinter = pprint.PrettyPrinter(depth=3)
 import graph_new
 import time
 import numpy as np
@@ -14,6 +19,7 @@ import pandas as pd
 import read_functions
 import os
 import csv
+from pathlib import Path
 
 def print_error(msg):
     print('{} - ERROR - {}'.format('*'*20,'*'*20))
@@ -103,7 +109,20 @@ class HIVAE():
         
 
     def training_ak(self,training_data,epochs=200,learning_rate=1e-3,results_path='./',restore=False,train_or_test=True,restore_session=False):
+        print('AK-DEBUG')
+        print('len(training_data)',len(training_data))
+        print('AK-DEBUG')
 
+        # train_or_test == True - training
+        training_phase  = train_or_test
+        testing_phase   = not train_or_test
+
+        batch_size_here = self.batch_size
+        
+        # if testing phase use all as one single batch
+        if testing_phase:
+            batch_size_here = len(training_data)
+        
         # train_data = None
         # # test whether data is pandas DataFrame or numpy.nparray
         # if type(training_data) == type(pd.DataFrame()):
@@ -119,7 +138,7 @@ class HIVAE():
                                                                                                 self.miss_file,
                                                                                                 self.true_miss_file)
 
-        n_batches = int(np.floor(np.shape(train_data)[0]/self.batch_size))
+        n_batches = int(np.floor(np.shape(train_data)[0]/batch_size_here))
         #Compute the real miss_mask
         miss_mask = np.multiply(miss_mask, true_miss_mask)
         
@@ -131,7 +150,7 @@ class HIVAE():
             tf_nodes = graph_new.HVAE_graph(
                 self.model_name,
                 self.types_list,
-                self.batch_size,
+                batch_size_here,
                 learning_rate=learning_rate,
                 z_dim=self.dim_z,
                 y_dim=self.dim_y,
@@ -151,193 +170,171 @@ class HIVAE():
                 print('Initizalizing Variables ...')
                 tf.global_variables_initializer().run()
     
-            # train_or_test == True - training
-            training_phase  = train_or_test
-            testing_phase   = not train_or_test
-            if train_or_test: # 
+            if training_phase:
                 print('Training the HVAE ...')
+            elif testing_phase:
+                print('Testing the HVAE ...')
+                
         
-                start_time = time.time()
-                # Training cycle
+            start_time = time.time()
+            # Training cycle
         
-                loglik_epoch = []
-                testloglik_epoch = []
-                error_train_mode_global = []
-                error_test_mode_global = []
-                KL_s_epoch = []
-                KL_z_epoch = []
-                for epoch in range(epochs):
-                    avg_loss = 0.
-                    avg_KL_s = 0.
-                    avg_KL_y = 0.
-                    avg_KL_z = 0.
-                    samples_list = []
-                    p_params_list = []
-                    q_params_list = []
-                    log_p_x_total = []
-                    log_p_x_missing_total = []
+            loglik_epoch = []
+            testloglik_epoch = []
+            error_train_mode_global = []
+            error_test_mode_global = []
+            KL_s_epoch = []
+            KL_z_epoch = []
+            for epoch in range(epochs):
+                avg_loss = 0.
+                avg_KL_s = 0.
+                avg_KL_y = 0.
+                avg_KL_z = 0.
+                samples_list = []
+                p_params_list = []
+                q_params_list = []
+                log_p_x_total = []
+                log_p_x_missing_total = []
             
-                    # Annealing of Gumbel-Softmax parameter
-                    tau = None
+                # Annealing of Gumbel-Softmax parameter
+                tau = None
+                if training_phase:
+                    tau = np.max([1.0 - 0.01*epoch,1e-3])
+                elif testing_phase:
+                    tau = 1e-3
+                #            tau = 1e-3
+                tau2 = np.min([0.001*epoch,1.0])
+
+            
+                #Randomize the data in the mini-batches
+                random_perm = np.random.permutation(range(np.shape(train_data)[0]))
+                train_data_aux = train_data[random_perm,:]
+                miss_mask_aux = miss_mask[random_perm,:]
+                true_miss_mask_aux = true_miss_mask[random_perm,:]
+            
+                for i in range(n_batches):      
+                
+                    #Create inputs for the feed_dict
+                    data_list, miss_list = read_functions.next_batch(train_data_aux, self.types_list, miss_mask_aux, batch_size_here, index_batch=i)
+
+                    #Delete not known data (input zeros)
+                    data_list_observed = [data_list[i]*np.reshape(miss_list[:,i],[batch_size_here,1]) for i in range(len(data_list))]
+                
+                    #Create feed dictionary
+                    feedDict = {i: d for i, d in zip(tf_nodes['ground_batch'], data_list)}
+                    feedDict.update({i: d for i, d in zip(tf_nodes['ground_batch_observed'], data_list_observed)})
+                    feedDict[tf_nodes['miss_list']] = miss_list
+                    feedDict[tf_nodes['tau_GS']] = tau
+                    feedDict[tf_nodes['tau_var']] = tau2
+                    
+                    #Running VAE
+                    loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params = None,None,None,None,None,None,None,None
                     if training_phase:
-                        tau = np.max([1.0 - 0.01*epoch,1e-3])
-                    elif testing_phase:
-                        tau = 1e-3
-                    #            tau = 1e-3
-                    tau2 = np.min([0.001*epoch,1.0])
-
-            
-                    #Randomize the data in the mini-batches
-                    random_perm = np.random.permutation(range(np.shape(train_data)[0]))
-                    train_data_aux = train_data[random_perm,:]
-                    miss_mask_aux = miss_mask[random_perm,:]
-                    true_miss_mask_aux = true_miss_mask[random_perm,:]
-            
-                    for i in range(n_batches):      
-                
-                        #Create inputs for the feed_dict
-                        data_list, miss_list = read_functions.next_batch(train_data_aux, self.types_list, miss_mask_aux, self.batch_size, index_batch=i)
-
-                        #Delete not known data (input zeros)
-                        data_list_observed = [data_list[i]*np.reshape(miss_list[:,i],[self.batch_size,1]) for i in range(len(data_list))]
-                
-                        #Create feed dictionary
-                        feedDict = {i: d for i, d in zip(tf_nodes['ground_batch'], data_list)}
-                        feedDict.update({i: d for i, d in zip(tf_nodes['ground_batch_observed'], data_list_observed)})
-                        feedDict[tf_nodes['miss_list']] = miss_list
-                        feedDict[tf_nodes['tau_GS']] = tau
-                        feedDict[tf_nodes['tau_var']] = tau2
-                    
-                        #Running VAE
-                        loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params = None,None,None,None,None,None,None,None
-                        if training_phase:
-                            _,loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params  = session.run([tf_nodes['optim'], tf_nodes['loss_re'], tf_nodes['KL_z'], tf_nodes['KL_s'], tf_nodes['samples'],
-                                                                                                               tf_nodes['log_p_x'], tf_nodes['log_p_x_missing'],tf_nodes['p_params'],tf_nodes['q_params']],
+                        _,loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params  = session.run([tf_nodes['optim'],
+                                                                                                               tf_nodes['loss_re'], tf_nodes['KL_z'],
+                                                                                                               tf_nodes['KL_s'], tf_nodes['samples'],
+                                                                                                               tf_nodes['log_p_x'], tf_nodes['log_p_x_missing'],
+                                                                                                               tf_nodes['p_params'],tf_nodes['q_params']],
                                                                                                               feed_dict=feedDict)
-                        elif testing_phase:
-                            loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params  = session.run([tf_nodes['loss_re'], tf_nodes['KL_z'], tf_nodes['KL_s'], tf_nodes['samples'],
-                                            tf_nodes['log_p_x'], tf_nodes['log_p_x_missing'],tf_nodes['p_params'],tf_nodes['q_params']],
-                                            feed_dict=feedDict)
+                    elif testing_phase:
+                        loss,KL_z,KL_s,samples,log_p_x,log_p_x_missing,p_params,q_params  = session.run([tf_nodes['loss_re'], tf_nodes['KL_z'],
+                                                                                                             tf_nodes['KL_s'], tf_nodes['samples'],
+                                                                                                             tf_nodes['log_p_x'], tf_nodes['log_p_x_missing'],
+                                                                                                             tf_nodes['p_params'],tf_nodes['q_params']],
+                                                                                                            feed_dict=feedDict)
 
 
-                        samples_test,log_p_x_test,log_p_x_missing_test,test_params  = session.run([tf_nodes['samples_test'],tf_nodes['log_p_x_test'],tf_nodes['log_p_x_missing_test'],tf_nodes['test_params']],
-                                                                                                      feed_dict=feedDict)
+                    samples_test,log_p_x_test,log_p_x_missing_test,test_params  = session.run([tf_nodes['samples_test'],
+                                                                                                   tf_nodes['log_p_x_test'],tf_nodes['log_p_x_missing_test'],
+                                                                                                   tf_nodes['test_params']],
+                                                                                                  feed_dict=feedDict)
                 
-                
-                        #Evaluate results on the imputation with mode, not on the samlpes!
-                        samples_list.append(samples_test)
-                        p_params_list.append(test_params)
-                        #                        p_params_list.append(p_params)
-                        q_params_list.append(q_params)
-                        log_p_x_total.append(log_p_x_test)
-                        log_p_x_missing_total.append(log_p_x_missing_test)
-                
-                        # Compute average loss
-                        avg_loss += np.mean(loss)
-                        avg_KL_s += np.mean(KL_s)
-                        avg_KL_z += np.mean(KL_z)
-                
-                    #Concatenate samples in arrays
-                    s_total, z_total, y_total, est_data = read_functions.samples_concatenation(samples_list)
-                    # print('AK-DEBUG')
-                    # print(len(train_data_aux))
-                    # print('AK-DEBUG')
-                    #Transform discrete variables back to the original values
-                    #ak: lost examples when batch_size and number of variables are not modulus 0
-                    train_data_transformed = read_functions.discrete_variables_transformation(train_data_aux[:n_batches*self.batch_size,:], self.types_list)
-                    #ak-should-be: train_data_transformed = read_functions.discrete_variables_transformation(train_data_aux, self.types_list)
-                    # print('AK-DEBUG')
-                    # print(n_batches)
-                    # print(n_batches*self.batch_size)
-                    # print(n_batches*self.batch_size)
-                    # print('train_data_transformed',len(train_data_transformed))
-                    # print('AK-DEBUG')
-                    est_data_transformed = read_functions.discrete_variables_transformation(est_data, self.types_list)
-                    #ak: lost examples when batch_size and number of variables are not modulus 0
-                    est_data_imputed = read_functions.mean_imputation(train_data_transformed, miss_mask_aux[:n_batches*self.batch_size,:], self.types_list)
-                    #ak-should-be: est_data_imputed = read_functions.mean_imputation(train_data_transformed, miss_mask_aux, self.types_list)
-            
-                    #est_data_transformed[np.isinf(est_data_transformed)] = 1e20
-            
-                    #Create global dictionary of the distribution parameters
-                    p_params_complete = read_functions.p_distribution_params_concatenation(p_params_list, self.types_list, self.dim_z, self.dim_s)
-                    q_params_complete = read_functions.q_distribution_params_concatenation(q_params_list,  self.dim_z, self.dim_s)
-            
-                    #Number of clusters created
-                    cluster_index = np.argmax(q_params_complete['s'],1)
-                    cluster = np.unique(cluster_index)
-                    print('Clusters: ' + str(len(cluster)))
-            
-                    #Compute mean and mode of our loglik models
-                    loglik_mean, loglik_mode = read_functions.statistics(p_params_complete['x'],self.types_list)
-                    #            loglik_mean[np.isinf(loglik_mean)] = 1e20
-                    # print('AK-DEBUG')
-                    # print('p_params_complete["x"]',len(p_params_complete['x']))
-                    # print('loglik_mean',len(loglik_mean))
-                    # print('loglik_mode',len(loglik_mode))
-                    # print('AK-DEBUG')
-
-                    # print('train_data_transformed',type(train_data_transformed))
-                    # print('train_data_transformed',train_data_transformed.shape)
-                    # print('loglik_mean',type(loglik_mean))
-                    # print('loglik_mean',loglik_mean.shape)
-                    # print('miss_mask_aux',type(miss_mask_aux))
-                    # print('miss_mask_aux',miss_mask_aux.shape)
-                    # print('n_batches',n_batches)
-                        
-                    #Try this for the errors
-                    #ak: lost examples when batch_size and number of variables are not modulus 0
-                    error_train_mean, error_test_mean = read_functions.error_computation(train_data_transformed, loglik_mean, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
-                    error_train_mode, error_test_mode = read_functions.error_computation(train_data_transformed, loglik_mode, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
-                    error_train_samples, error_test_samples = read_functions.error_computation(train_data_transformed, est_data_transformed, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
-                    error_train_imputed, error_test_imputed = read_functions.error_computation(train_data_transformed, est_data_imputed, self.types_list, miss_mask_aux[:n_batches*self.batch_size,:])
-
-                    # print('AK-DEBUG')
-                    # print('train_data_transformed',len(train_data_transformed))
-                    # print('loglik_mean',len(loglik_mean))
-                    # print('miss_mask_aux',len(miss_mask_aux))
-                    # print('AK-DEBUG')
-                    #ak-should-be: train_data_transformed, loglik_mean, self.types_list, miss_mask_aux
-                    #ak-should-be: error_train_mean, error_test_mean = read_functions.error_computation(train_data_transformed, loglik_mean, self.types_list, miss_mask_aux)
-                    #ak-should-be: error_train_mode, error_test_mode = read_functions.error_computation(train_data_transformed, loglik_mode, self.types_list, miss_mask_aux)
-                    #ak-should-be: error_train_samples, error_test_samples = read_functions.error_computation(train_data_transformed, est_data_transformed, self.types_list, miss_mask_aux)
-                    #ak-should-be: error_train_imputed, error_test_imputed = read_functions.error_computation(train_data_transformed, est_data_imputed, self.types_list, miss_mask_aux)
                     
-                    #Compute test-loglik from log_p_x_missing
-                    log_p_x_total = np.transpose(np.concatenate(log_p_x_total,1))
-                    log_p_x_missing_total = np.transpose(np.concatenate(log_p_x_missing_total,1))
-                    if self.true_miss_file:
-                        log_p_x_missing_total = np.multiply(log_p_x_missing_total,true_miss_mask_aux[:n_batches*self.batch_size,:])
-                    avg_test_loglik = 100000  ##  np.finfo(float).max #ak - maximal float number = ugly for printing
-                    if self.miss_file:
-                        avg_test_loglik = np.sum(log_p_x_missing_total)/np.sum(1.0-miss_mask_aux)
-
-                    # Display logs per epoch step
-                    if self.display:
-                        self.print_loss(epoch, start_time, avg_loss/n_batches, avg_test_loglik, avg_KL_s/n_batches, avg_KL_z/n_batches)
-                        # print('Test error mode: ' + str(np.round(np.mean(error_test_mode),3)))
-                        # print("")
+                    #Evaluate results on the imputation with mode, not on the samlpes!
+                    samples_list.append(samples_test)
+                    p_params_list.append(test_params)
+                    #                        p_params_list.append(p_params)
+                    q_params_list.append(q_params)
+                    log_p_x_total.append(log_p_x_test)
+                    log_p_x_missing_total.append(log_p_x_missing_test)
                 
-                    #Compute train and test loglik per variables
-                    loglik_per_variable = np.sum(log_p_x_total,0)/np.sum(miss_mask_aux,0)
+                    # Compute average loss
+                    avg_loss += np.mean(loss)
+                    avg_KL_s += np.mean(KL_s)
+                    avg_KL_z += np.mean(KL_z)
+                
+                #Concatenate samples in arrays
+                s_total, z_total, y_total, est_data = read_functions.samples_concatenation(samples_list)
+                #Transform discrete variables back to the original values
+                train_data_transformed = read_functions.discrete_variables_transformation(train_data_aux[:n_batches*batch_size_here,:], self.types_list)
+                est_data_transformed = read_functions.discrete_variables_transformation(est_data, self.types_list)
+                est_data_imputed = read_functions.mean_imputation(train_data_transformed, miss_mask_aux[:n_batches*batch_size_here,:], self.types_list)
+            
+                #est_data_transformed[np.isinf(est_data_transformed)] = 1e20
+            
+                #Create global dictionary of the distribution parameters
+                p_params_complete = read_functions.p_distribution_params_concatenation(p_params_list, self.types_list, self.dim_z, self.dim_s)
+                q_params_complete = read_functions.q_distribution_params_concatenation(q_params_list,  self.dim_z, self.dim_s)
+            
+                #Number of clusters created
+                cluster_index = np.argmax(q_params_complete['s'],1)
+                cluster = np.unique(cluster_index)
+                print('Clusters: ' + str(len(cluster)))
+            
+                #Compute mean and mode of our loglik models
+                loglik_mean, loglik_mode = read_functions.statistics(p_params_complete['x'],self.types_list)
+                #            loglik_mean[np.isinf(loglik_mean)] = 1e20
 
-                    #ak: only compute if a missing file was supplied
-                    loglik_per_variable_missing =  100000  ##  np.finfo(float).max #ak - maximal float number = ugly for printing
-                    if self.miss_file:
-                        loglik_per_variable_missing = np.sum(log_p_x_missing_total,0)/np.sum(1.0-miss_mask_aux,0)
+                # print('train_data_transformed',type(train_data_transformed))
+                # print('train_data_transformed',train_data_transformed.shape)
+                # print('loglik_mean',type(loglik_mean))
+                # print('loglik_mean',loglik_mean.shape)
+                # print('miss_mask_aux',type(miss_mask_aux))
+                # print('miss_mask_aux',miss_mask_aux.shape)
+                # print('n_batches',n_batches)
+                        
+                #Try this for the errors
+                #ak: lost examples when batch_size and number of variables are not modulus 0
+                error_train_mean, error_test_mean = read_functions.error_computation(train_data_transformed, loglik_mean, self.types_list, miss_mask_aux[:n_batches*batch_size_here,:])
+                error_train_mode, error_test_mode = read_functions.error_computation(train_data_transformed, loglik_mode, self.types_list, miss_mask_aux[:n_batches*batch_size_here,:])
+                error_train_samples, error_test_samples = read_functions.error_computation(train_data_transformed, est_data_transformed, self.types_list, miss_mask_aux[:n_batches*batch_size_here,:])
+                error_train_imputed, error_test_imputed = read_functions.error_computation(train_data_transformed, est_data_imputed, self.types_list, miss_mask_aux[:n_batches*batch_size_here,:])
+
+                #Compute test-loglik from log_p_x_missing
+                log_p_x_total = np.transpose(np.concatenate(log_p_x_total,1))
+                log_p_x_missing_total = np.transpose(np.concatenate(log_p_x_missing_total,1))
+                if self.true_miss_file:
+                    log_p_x_missing_total = np.multiply(log_p_x_missing_total,true_miss_mask_aux[:n_batches*batch_size_here,:])
+                avg_test_loglik = 100000  ##  np.finfo(float).max #ak - maximal float number = ugly for printing
+                if self.miss_file:
+                    avg_test_loglik = np.sum(log_p_x_missing_total)/np.sum(1.0-miss_mask_aux)
+
+                # Display logs per epoch step
+                if self.display:
+                    self.print_loss(epoch, start_time, avg_loss/n_batches, avg_test_loglik, avg_KL_s/n_batches, avg_KL_z/n_batches)
+                    # print('Test error mode: ' + str(np.round(np.mean(error_test_mode),3)))
+                    # print("")
+                
+                #Compute train and test loglik per variables
+                loglik_per_variable = np.sum(log_p_x_total,0)/np.sum(miss_mask_aux,0)
+
+                #ak: only compute if a missing file was supplied
+                loglik_per_variable_missing =  100000  ##  np.finfo(float).max #ak - maximal float number = ugly for printing
+                if self.miss_file:
+                    loglik_per_variable_missing = np.sum(log_p_x_missing_total,0)/np.sum(1.0-miss_mask_aux,0)
             
-                    #Store evolution of all the terms in the ELBO
-                    loglik_epoch.append(loglik_per_variable)
-                    testloglik_epoch.append(loglik_per_variable_missing)
-                    KL_s_epoch.append(avg_KL_s/n_batches)
-                    KL_z_epoch.append(avg_KL_z/n_batches)
-                    error_train_mode_global.append(error_train_mode)
-                    error_test_mode_global.append(error_test_mode)
+                #Store evolution of all the terms in the ELBO
+                loglik_epoch.append(loglik_per_variable)
+                testloglik_epoch.append(loglik_per_variable_missing)
+                KL_s_epoch.append(avg_KL_s/n_batches)
+                KL_z_epoch.append(avg_KL_z/n_batches)
+                error_train_mode_global.append(error_train_mode)
+                error_test_mode_global.append(error_test_mode)
             
             
-                    if epoch % self.save == 0:
-                        print('Saving Variables ...')  
-                        save_path = saver.save(session, self.network_file_name)
+                if epoch % self.save == 0:
+                    print('Saving Variables ...')  
+                    save_path = saver.save(session, self.network_file_name)
                 
             print('Training Finished ...')
 
@@ -353,13 +350,13 @@ class HIVAE():
                 #Compute the data reconstruction
                 print('AK-DEBUG')
                 print(n_batches)
-                print(n_batches*self.batch_size)
-                print(len(miss_mask_aux[:n_batches*self.batch_size,:]))
+                print(n_batches*batch_size_here)
+                print(len(miss_mask_aux[:n_batches*batch_size_here,:]))
                 print(len(train_data_transformed))
                 print('AK-DEBUG')
             
-                data_reconstruction = train_data_transformed * miss_mask_aux[:n_batches*self.batch_size,:] + \
-                  np.round(loglik_mode,3) * (1 - miss_mask_aux[:n_batches*self.batch_size,:])
+                data_reconstruction = train_data_transformed * miss_mask_aux[:n_batches*batch_size_here,:] + \
+                  np.round(loglik_mode,3) * (1 - miss_mask_aux[:n_batches*batch_size_here,:])
                 train_data_transformed = train_data_transformed[np.argsort(random_perm)]
                 data_reconstruction = data_reconstruction[np.argsort(random_perm)]
                 self.save_data(self.results_path,'{}_data_reconstruction.csv'.format(self.experiment_name),data_reconstruction)
@@ -517,7 +514,7 @@ class HIVAE():
                     samples_test, log_p_x_test, log_p_x_missing_test, test_params = session.run(
                         [tf_nodes['samples_test'], tf_nodes['log_p_x_test'], tf_nodes['log_p_x_missing_test'],tf_nodes['test_params']],
                         feed_dict=feedDict)
-
+                    
                     # summary_writer.add_summary(samples_test, epoch * n_batches + i)
                     # # write out networks structure
                     # if epoch > 5:
@@ -557,9 +554,11 @@ class HIVAE():
                     # Transform discrete variables back to the original values
                     train_data_transformed = read_functions.discrete_variables_transformation(
                         train_data_aux[:n_batches * batchsize, :], self.types_list)
+                        # train_data_aux[:, :], self.types_list)
                     est_data_transformed = read_functions.discrete_variables_transformation(est_data, self.types_list)
                     est_data_imputed = read_functions.mean_imputation(train_data_transformed,
                                                                           miss_mask_aux[:n_batches * batchsize, :],
+                                                                          # miss_mask_aux[:, :],
                                                                           self.types_list)
 
                     #            est_data_transformed[np.isinf(est_data_transformed)] = 1e20
@@ -591,11 +590,11 @@ class HIVAE():
                     error_train_samples, error_test_samples = read_functions.error_computation(train_data_transformed,
                                                                                                    est_data_transformed, self.types_list,
                                                                                                    miss_mask_aux[
-                                                                                                       :n_batches * batchsize, :])
+                                                                                                   :n_batches * batchsize, :])
                     error_train_imputed, error_test_imputed = read_functions.error_computation(train_data_transformed,
                                                                                                    est_data_imputed, self.types_list,
                                                                                                    miss_mask_aux[
-                                                                                                       :n_batches * batchsize, :])
+                                                                                                   :n_batches * batchsize, :])
 
                     # Compute test-loglik from log_p_x_missing
                     log_p_x_total = np.transpose(np.concatenate(log_p_x_total, 1))
@@ -698,7 +697,7 @@ class HIVAE():
         # Compute the data reconstruction
 
         data_reconstruction = test.train_data_transformed * test.miss_mask_aux[:test.n_batches * batchsize, :] + \
-                          np.round(test.loglik_mode, 3) * (1 - test.miss_mask_aux[:test.n_batches * batchsize, :])
+                           np.round(test.loglik_mode, 3) * (1 - test.miss_mask_aux[:test.n_batches * batchsize, :])
 
         #        data_reconstruction = -1 * miss_mask_aux[:n_batches*args.batch_size,:] + \
         #                                np.round(loglik_mode,3) * (1 - miss_mask_aux[:n_batches*args.batch_size,:])
