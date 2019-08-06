@@ -65,8 +65,8 @@ class HIVAE():
         self.dim_z            = save_get(network_dict,'dim_z',None) 
         self.dim_y            = save_get(network_dict,'dim_y',None)
         self.batch_size       = save_get(network_dict,'batch_size',32)
-        self.true_miss_file   = true_miss_file
-        self.miss_file        = miss_file
+        # self.true_miss_file   = true_miss_file
+        # self.miss_file        = miss_file
         self.network_path     = network_path
         self.results_path     = results_path
         self.display          = True
@@ -117,7 +117,16 @@ class HIVAE():
             
         
 
-    def training_ak(self,training_data,epochs=200,learning_rate=1e-3,results_path='./',restore=False,train_or_test=True,restore_session=False,verbosity=3):
+    def training_ak(self,training_data,epochs=200,
+                        learning_rate=1e-3,
+                        results_path='./',
+                        restore=False,
+                        train_or_test=True,
+                        restore_session=False,
+                        true_missing_mask=None,
+                        missing_mask = None,
+                        verbosity=3):
+        
         vprint(2,'len(training_data)',len(training_data))
 
         # train_or_test == True - training
@@ -140,11 +149,29 @@ class HIVAE():
         #     print('DEBUG-AK: Data not in correct format, Type = {}'.format(type(training_data)))
         #     sys.exit(-100)
 
-        train_data, _ , miss_mask, true_miss_mask, n_samples = read_functions.read_data_df_as_input(training_data,
-                                                                                                self.types_list,
-                                                                                                self.miss_file,
-                                                                                                self.true_miss_file)
+        # train_data, _ , miss_mask, true_miss_mask, n_samples = read_functions.read_data_df_as_input(training_data,
+        #                                                                                         self.types_list,
+        #                                                                                         self.miss_file,
+        #                                                                                         self.true_miss_file)
 
+        train_data, _ , n_samples = read_functions.read_data_df(training_data,self.types_list)
+
+        true_miss_set = False
+        miss_set      = False
+        # deal with true missing data
+        if type(true_missing_mask)==type(pd.DataFrame()) and not true_missing_mask.empty:
+            true_miss_mask = true_missing_mask.to_numpy()
+            true_miss_set = True
+        else:
+            true_miss_mask = np.ones(training_data.shape,dtype=int)
+
+        # deal with non-true missing data
+        if type(missing_mask)==type(pd.DataFrame()) and not missing_mask.empty:
+            miss_mask = missing_mask.to_numpy()
+            miss_set = True
+        else:
+            miss_mask = np.ones(training_data.shape,dtype=int)
+       
         n_batches = int(np.floor(np.shape(train_data)[0]/batch_size_here))
         #Compute the real miss_mask
         miss_mask = np.multiply(miss_mask, true_miss_mask)
@@ -310,10 +337,10 @@ class HIVAE():
                 #Compute test-loglik from log_p_x_missing
                 log_p_x_total = np.transpose(np.concatenate(log_p_x_total,1))
                 log_p_x_missing_total = np.transpose(np.concatenate(log_p_x_missing_total,1))
-                if self.true_miss_file:
+                if true_miss_set:
                     log_p_x_missing_total = np.multiply(log_p_x_missing_total,true_miss_mask_aux[:n_batches*batch_size_here,:])
                 avg_test_loglik = 100000  ##  np.finfo(float).max #ak - maximal float number = ugly for printing
-                if self.miss_file:
+                if miss_set:
                     avg_test_loglik = np.sum(log_p_x_missing_total)/np.sum(1.0-miss_mask_aux)
 
                 # Display logs per epoch step
@@ -327,7 +354,7 @@ class HIVAE():
 
                 #ak: only compute if a missing file was supplied
                 loglik_per_variable_missing =  100000  ##  np.finfo(float).max #ak - maximal float number = ugly for printing
-                if self.miss_file:
+                if miss_set:
                     loglik_per_variable_missing = np.sum(log_p_x_missing_total,0)/np.sum(1.0-miss_mask_aux,0)
             
                 #Store evolution of all the terms in the ELBO

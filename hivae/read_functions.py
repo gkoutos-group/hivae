@@ -31,6 +31,58 @@ def get_types_list(types_description):
     return types_list
 
 
+def read_data_df(datadf, types_description):
+    # moved to extra method
+    types_list = get_types_list(types_description)
+    data = np.array(datadf)
+    
+    # Construct the data matrices
+    data_complete = []
+    for i in range(np.shape(data)[1]):
+        if types_list[i]['type'] == 'cat':
+            # Get categories
+            cat_data = [int(x) for x in data[:, i]]
+            categories, indexes = np.unique(cat_data, return_inverse=True)
+            # Transform categories to a vector of 0:n_categories
+            new_categories = np.arange(int(types_list[i]['dim']))
+            cat_data = new_categories[indexes]
+            # Create one hot encoding for the categories
+            aux = np.zeros([np.shape(data)[0], len(new_categories)])
+            aux[np.arange(np.shape(data)[0]), cat_data] = 1
+            data_complete.append(aux)
+
+        elif types_list[i]['type'] == 'ordinal':
+            # Get categories
+            cat_data = [int(x) for x in data[:, i]]
+            categories, indexes = np.unique(cat_data, return_inverse=True)
+            # Transform categories to a vector of 0:n_categories
+            new_categories = np.arange(int(types_list[i]['dim']))
+            cat_data = new_categories[indexes]
+            # Create thermometer encoding for the categories
+            aux = np.zeros([np.shape(data)[0], 1 + len(new_categories)])
+            aux[:, 0] = 1
+            aux[np.arange(np.shape(data)[0]), 1 + cat_data] = -1
+            aux = np.cumsum(aux, 1)
+            data_complete.append(aux[:, :-1])
+
+        elif types_list[i]['type'] == 'count':
+            if np.min(data[:, i]) == 0:
+                aux = data[:, i] + 1
+                data_complete.append(np.transpose([aux]))
+            else:
+                data_complete.append(np.transpose([data[:, i]]))
+
+
+
+        else:
+            data_complete.append(np.transpose([data[:, i]]))
+
+    data = np.concatenate(data_complete, 1)
+    n_samples = np.shape(data)[0]
+
+    return data, types_list, n_samples
+    
+
 def read_data_df_as_input(datadf, types_description, miss_file, true_miss):
 
     # moved to extra method

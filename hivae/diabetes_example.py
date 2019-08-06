@@ -48,6 +48,17 @@ else:
     train_data = pd.read_csv(train_file)
     test_data  = pd.read_csv(test_file)
 
+
+# construct missing data mask
+missing_true_train = pd.DataFrame()
+for x in list(train_data.columns.values):
+    missing_true_train[x] = train_data[x].isna().map({True:0,False:1})
+
+missing_true_test = pd.DataFrame()
+for x in list(test_data.columns.values):
+    missing_true_test  =  test_data[x].isna().map({True:0,False:1})
+    
+    
 print(len(train_data))
 print(list(train_data.index[:20]))
 print(len(test_data))
@@ -78,8 +89,10 @@ network_dict = {
 
 hivae = HIVAE_AK.HIVAE(types_list,network_dict,network_path,results_path)
 
-hivae.training_ak(train_data,epochs=500,results_path=results_path)
-(test_data, test_data_reconstructed, test_data_decoded, test_data_embedded_z, test_data_embedded_s) = hivae.training_ak(test_data,epochs=1,results_path=results_path,train_or_test=False,restore_session=True)
+hivae.training_ak(train_data,epochs=30,results_path=results_path,true_missing_mask=missing_true_train)
+(test_data, test_data_reconstructed, test_data_decoded, test_data_embedded_z, test_data_embedded_s) = hivae.training_ak(test_data,epochs=1,results_path=results_path,train_or_test=False,restore_session=True,true_missing_mask=missing_true_test)
+print(test_data_embedded_z)
+
 
 # test_file_5     = '{}/data_test_5.csv'.format(dataset_path)
 # df_test_5 = pd.read_csv(test_file_5,header=-1)
@@ -100,9 +113,9 @@ hivae.training_ak(train_data,epochs=500,results_path=results_path)
 # print(t5_data_embedded_z_3.tolist())
 
 
-pprinter.pprint(np.cov(t5_data_embedded_z_1))
-pprinter.pprint(np.cov(t5_data_embedded_z_2))
-pprinter.pprint(np.cov(t5_data_embedded_z_3))
+# pprinter.pprint(np.cov(t5_data_embedded_z_1))
+# pprinter.pprint(np.cov(t5_data_embedded_z_2))
+# pprinter.pprint(np.cov(t5_data_embedded_z_3))
 
 
  
