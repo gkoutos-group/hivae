@@ -8,7 +8,10 @@ pprinter = pprint.PrettyPrinter(depth=3)
 
 #data_directory = '/data/projects/vectorisation/HI-VAE/data'
 main_directory = '/Users/karwath/develop/GANs/hivae/hivae'
+#dataset_name = 'Mock'
 dataset_name = 'Diabetes'
+dataset_name = 'Adult'
+
 dataset_path = '{}/data/{}'.format(main_directory,dataset_name)
 results_path = '{}/results/{}'.format(main_directory,dataset_name)
 network_path = '{}/network/{}'.format(main_directory,dataset_name)
@@ -16,6 +19,53 @@ network_path = '{}/network/{}'.format(main_directory,dataset_name)
 print(dataset_path)
 print(results_path)
 print(network_path)
+
+
+types_list_d = {}
+#Diabetes
+types_list_d['Diabetes'] = [
+    ('AGE','count',1,None),
+    ('SEX','cat',2,2),
+    ('BMI','pos',1,None),
+    ('BP','pos',1,None),
+    ('S1','pos',1,None),
+    ('S2','pos',1,None),
+    ('S3','pos',1,None),
+    ('S4','pos',1,None),
+    ('S5','pos',1,None),
+    ('S6','pos',1,None),
+    # ('Y','pos',1,None)
+    ]
+
+# Adult
+types_list_d['Adult'] = [
+    ('V1','count',1,None),
+    ('V2','cat',7,7),
+    ('V3','pos',1,None),
+    ('V4','ordinal',16,16),
+    ('V5','cat',7,7),
+    ('V6','cat',14,14),
+    ('V7','cat',6,6),
+    ('V8','cat',5,5),
+    ('V9','cat',2,2),
+    ('V10','pos',1,None),
+    ('V11','pos',1,None),
+    ('V12','count',1,None)
+    ]
+
+types_list_d['Mock'] = [
+    ('V1','count',1,None),
+    ('V2','cat',2,2),
+    ('V3','ordinal',2,2),
+    ('V4','pos',1,None),
+    ]
+    
+
+
+
+types_list = types_list_d[dataset_name]
+
+
 
 data_file_org = '{}/data_org.csv'.format(dataset_path)
 data_file     = '{}/data.csv'.format(dataset_path)
@@ -27,7 +77,7 @@ train_data = None
 test_data  = None
 
 # if train/test does not exist - create from new
-if os.path.exists(data_file):
+if not os.path.exists(train_file):
     data_df = pd.read_csv(data_file_org,header=-1)
     data_df.insert(0,'ID',['{:s}'.format(str(x).zfill(3)) for x in range(len(data_df))])
     print('Len data = ',len(data_df))
@@ -64,19 +114,6 @@ print(list(train_data.index[:20]))
 print(len(test_data))
 print(list(test_data.index[:20]))
 
-types_list = [
-    ('AGE','count',1,None),
-    ('SEX','cat',2,2),
-    ('BMI','pos',1,None),
-    ('BP','pos',1,None),
-    ('S1','pos',1,None),
-    ('S2','pos',1,None),
-    ('S3','pos',1,None),
-    ('S4','pos',1,None),
-    ('S5','pos',1,None),
-    ('S6','pos',1,None),
-    # ('Y','pos',1,None)
-    ]
 
 network_dict = {
     'batch_size' : 32,
@@ -86,6 +123,10 @@ network_dict = {
     'dim_s': 3,
 }
 
+
+print(types_list)
+print(missing_true_train[45:55])
+print('len training data',len(train_data))
 
 hivae = HIVAE_AK.HIVAE(types_list,network_dict,network_path,results_path)
 

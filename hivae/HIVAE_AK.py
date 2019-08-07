@@ -22,7 +22,7 @@ import csv
 from pathlib import Path
 
 
-verbosity = 3
+verbosity = 1
 
 def vprint(verbosity_level,*args):
     if verbosity_level>=verbosity:
@@ -154,8 +154,6 @@ class HIVAE():
         #                                                                                         self.miss_file,
         #                                                                                         self.true_miss_file)
 
-        train_data, _ , n_samples = read_functions.read_data_df(training_data,self.types_list)
-
         true_miss_set = False
         miss_set      = False
         # deal with true missing data
@@ -171,11 +169,13 @@ class HIVAE():
             miss_set = True
         else:
             miss_mask = np.ones(training_data.shape,dtype=int)
-       
+
+        train_data, _ , n_samples = read_functions.read_data_df(training_data,self.types_list,true_miss_mask)
+
+            
         n_batches = int(np.floor(np.shape(train_data)[0]/batch_size_here))
         #Compute the real miss_mask
         miss_mask = np.multiply(miss_mask, true_miss_mask)
-        
         #Creating graph
         sess_HVAE = tf.Graph()
         

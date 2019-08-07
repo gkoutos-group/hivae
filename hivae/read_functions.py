@@ -13,6 +13,15 @@ import scipy.io as sc
 from sklearn.metrics import mean_squared_error
 from pathlib import Path
 
+def saveInt(potentialInt):
+    intReturn = None
+    try:
+        intReturn = int(potentialInt)
+    except:
+        intReturn = 0
+        pass
+    return intReturn
+
 def get_types_list(types_description):
     types_list = None
     # test whether the types are passed as a list - if not assume it is a file which was supplied
@@ -31,11 +40,26 @@ def get_types_list(types_description):
     return types_list
 
 
-def read_data_df(datadf, types_description):
+def read_data_df(data_df,types_description,true_missing_mask=None):
     # moved to extra method
     types_list = get_types_list(types_description)
-    data = np.array(datadf)
-    
+    data = np.array(data_df)
+
+
+    # handle truely missing data
+    if type(true_missing_mask) != type(None):
+        data_masked = np.ma.masked_where(np.isnan(data),data)
+        #We need to fill the data depending on the given data...
+        data_filler = []
+        for i in range(len(types_list)):
+            if types_list[i]['type'] == 'cat' or types_list[i]['type'] == 'ordinal':
+                aux = np.unique(data[:,i])
+                data_filler.append(aux[0])  #Fill with the first element of the cat (0, 1, or whatever)
+            else:
+                data_filler.append(0.0)
+
+        data = data_masked.filled(data_filler)
+        
     # Construct the data matrices
     data_complete = []
     for i in range(np.shape(data)[1]):
@@ -71,9 +95,6 @@ def read_data_df(datadf, types_description):
                 data_complete.append(np.transpose([aux]))
             else:
                 data_complete.append(np.transpose([data[:, i]]))
-
-
-
         else:
             data_complete.append(np.transpose([data[:, i]]))
 
