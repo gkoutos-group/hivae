@@ -64,13 +64,7 @@ results_path: the output folder for results
 network_path: where the models are going to be stored
 
 types_list: the specific type for the dataset you are going to use
-
-data_file_org: original dataset Fathy, please remember and complete
-
 data_file: the full dataset
-
-data_file_id: Fathy, please remember and complete
-
 train_file/ test_file: if the dataset was already splitted
 
 train_data/test_data: pandas dataframes
