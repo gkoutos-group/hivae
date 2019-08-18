@@ -219,6 +219,7 @@ class HIVAE():
             error_test_mode_global = []
             KL_s_epoch = []
             KL_z_epoch = []
+
             for epoch in range(epochs):
                 avg_loss = 0.
                 avg_KL_s = 0.
@@ -229,6 +230,7 @@ class HIVAE():
                 q_params_list = []
                 log_p_x_total = []
                 log_p_x_missing_total = []
+                encodinglist =[]
             
                 # Annealing of Gumbel-Softmax parameter
                 tau = None
@@ -241,6 +243,7 @@ class HIVAE():
 
             
                 #Randomize the data in the mini-batches
+                np.random.seed(42)
                 random_perm = np.random.permutation(range(np.shape(train_data)[0]))
                 train_data_aux = train_data[random_perm,:]
                 miss_mask_aux = miss_mask[random_perm,:]
@@ -283,8 +286,9 @@ class HIVAE():
                                                                                                    tf_nodes['test_params']],
                                                                                                   feed_dict=feedDict)
                 
-                    
+                    encoding = session.run(tf_nodes['encoding'],feed_dict=feedDict)
                     #Evaluate results on the imputation with mode, not on the samlpes!
+                    encodinglist.append(encoding)
                     samples_list.append(samples_test)
                     p_params_list.append(test_params)
                     #                        p_params_list.append(p_params)
@@ -381,7 +385,8 @@ class HIVAE():
                 #ak: hack for now - as entries are not lists 
                 self.save_data(self.results_path,'{}_testloglik.csv'.format(self.experiment_name),[[x] for x in testloglik_epoch])
                 # Save the variables to disk at the end
-                save_path = saver.save(session, self.network_file_name) 
+                save_path = saver.save(session, self.network_file_name)
+                return encoding['z']
             
             elif testing_phase:
                 vprint(1,'Testing Finished ...')
@@ -407,7 +412,7 @@ class HIVAE():
                 vprint(2,'Reconstruction Correlation:')
                 vprint(2,df_real.corrwith(df_loglik_mean))
                 
-                
+
                 return (train_data_transformed,data_reconstruction,loglik_mean_reconstructed,
                             z_total[np.argsort(random_perm)],
                             s_total[np.argsort(random_perm)])

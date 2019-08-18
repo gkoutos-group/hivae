@@ -7,10 +7,10 @@ import pprint
 pprinter = pprint.PrettyPrinter(depth=3)
 
 #data_directory = '/data/projects/vectorisation/HI-VAE/data'
-main_directory = '/Users/karwath/develop/GANs/hivae/hivae'
+main_directory = '/Users/fathyshalaby/Documents/GitHub/hivae/hivae'
 #dataset_name = 'Mock'
 dataset_name = 'Diabetes'
-dataset_name = 'Adult'
+#dataset_name = 'Adult'
 
 dataset_path = '{}/data/{}'.format(main_directory,dataset_name)
 results_path = '{}/results/{}'.format(main_directory,dataset_name)
@@ -24,7 +24,7 @@ print(network_path)
 types_list_d = {}
 #Diabetes
 types_list_d['Diabetes'] = [
-    ('AGE','count',1,None),
+    ('AGE','pos',1,None),
     ('SEX','cat',2,2),
     ('BMI','pos',1,None),
     ('BP','pos',1,None),
@@ -127,13 +127,13 @@ network_dict = {
 print(types_list)
 print(missing_true_train[45:55])
 print('len training data',len(train_data))
-
+print(train_data)
 hivae = HIVAE_AK.HIVAE(types_list,network_dict,network_path,results_path)
 
-hivae.training_ak(train_data,epochs=30,results_path=results_path,true_missing_mask=missing_true_train)
+hivae.training_ak(train_data,epochs=500,results_path=results_path,true_missing_mask=missing_true_train)
 (test_data, test_data_reconstructed, test_data_decoded, test_data_embedded_z, test_data_embedded_s) = hivae.training_ak(test_data,epochs=1,results_path=results_path,train_or_test=False,restore_session=True,true_missing_mask=missing_true_test)
-print(test_data_embedded_z)
 
+print(test_data_embedded_z)
 
 # test_file_5     = '{}/data_test_5.csv'.format(dataset_path)
 # df_test_5 = pd.read_csv(test_file_5,header=-1)

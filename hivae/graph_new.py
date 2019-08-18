@@ -36,7 +36,7 @@ def HVAE_graph(model_name, types_description, batch_size, learning_rate=1e-3, z_
     #Encoder definition
     print('[*] Defining Encoder...')
     samples, q_params = model.encoder(X_list, miss_list, batch_size, z_dim, s_dim, tau)
-    
+    encoding = samples
     # print('debug ' * 10)
     # print(samples)
     # print('- ' * 10)
@@ -74,6 +74,7 @@ def HVAE_graph(model_name, types_description, batch_size, learning_rate=1e-3, z_
                 'samples_test': samples_test,
                 'test_params': test_params,
                 'log_p_x_test': log_p_x,
-                'log_p_x_missing_test': log_p_x_missing_test}
+                'log_p_x_missing_test': log_p_x_missing_test,
+                'encoding':encoding}
 
     return tf_nodes
