@@ -286,7 +286,8 @@ class HIVAE():
                                                                                                    tf_nodes['test_params']],
                                                                                                   feed_dict=feedDict)
                 
-                    encoding = session.run(tf_nodes['encoding'],feed_dict=feedDict)
+                    f_encoding = session.run(tf_nodes['encoding'],feed_dict=feedDict)
+                    encoding = f_encoding['z'][np.argsort(random_perm)]
                     #Evaluate results on the imputation with mode, not on the samlpes!
                     encodinglist.append(encoding)
                     samples_list.append(samples_test)
@@ -386,7 +387,7 @@ class HIVAE():
                 self.save_data(self.results_path,'{}_testloglik.csv'.format(self.experiment_name),[[x] for x in testloglik_epoch])
                 # Save the variables to disk at the end
                 save_path = saver.save(session, self.network_file_name)
-                return encoding['z']
+                return encoding
             
             elif testing_phase:
                 vprint(1,'Testing Finished ...')
