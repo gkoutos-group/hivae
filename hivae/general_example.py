@@ -6,8 +6,7 @@ import numpy as np
 import pprint
 pprinter = pprint.PrettyPrinter(depth=3)
 
-#data_directory = '/data/projects/vectorisation/HI-VAE/data'
-main_directory = '/Users/fathyshalaby/Documents/GitHub/hivae/hivae'
+main_directory = './'
 #dataset_name = 'Mock'
 dataset_name = 'Diabetes'
 #dataset_name = 'Adult'
