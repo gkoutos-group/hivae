@@ -4,7 +4,7 @@ This repository contains the Modular reimplemenation of the Heterogeneous Incomp
 
 The details of this model are included in this [paper](https://arxiv.org/abs/1807.03653). Please cite it if you use this code/library for your own research.
 
-## Databse description
+## Database description
 
 There are three different example datasets found in the library (Wine, Adult and Diabetes). Majority of the datasets( Wine and Adult) have each their own folder, containing:
 
