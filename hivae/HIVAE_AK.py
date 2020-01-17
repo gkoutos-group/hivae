@@ -86,7 +86,7 @@ class HIVAE():
             pass
         
 
-        self.network_file_name = '{}.ckpt'.format(full_network_path) 
+        self.network_file_name = '{}_ckpt'.format(full_network_path) 
         self.log_file_name = '{}/log_file_{}.txt'.format(full_network_path,self.savefile)
 
 
@@ -197,6 +197,11 @@ class HIVAE():
             # Add ops to save and restore all the variables.
             saver = tf.train.Saver()
         
+            if training_phase:
+                vprint(1,'Training the HVAE ...')
+            elif testing_phase:
+                vprint(1,'Testing the HVAE ...')
+                
             if restore_session:
                 saver.restore(session, self.network_file_name)
                 vprint(1,"Model restored.")
@@ -204,11 +209,6 @@ class HIVAE():
                 vprint(1,'Initizalizing Variables ...')
                 tf.global_variables_initializer().run()
     
-            if training_phase:
-                vprint(1,'Training the HVAE ...')
-            elif testing_phase:
-                vprint(1,'Testing the HVAE ...')
-                
         
             start_time = time.time()
             # Training cycle
@@ -366,9 +366,9 @@ class HIVAE():
                 error_test_mode_global.append(error_test_mode)
             
             
-                if epoch % self.save == 0:
-                    vprint(1,'Saving Variables ...')  
-                    save_path = saver.save(session, self.network_file_name)
+                # if epoch % self.save == 0:
+                #     vprint(1,'Saving Variables ...')  
+                #     save_path = saver.save(session, self.network_file_name)
                 
             if training_phase:
                 vprint(1,'Training Finished ...')
@@ -382,6 +382,8 @@ class HIVAE():
                 self.save_data(self.results_path,'{}_testloglik.csv'.format(self.experiment_name),[[x] for x in testloglik_epoch])
                 # Save the variables to disk at the end
                 save_path = saver.save(session, self.network_file_name)
+                self.save_path = save_path
+                print('save_path',save_path)
             
             elif testing_phase:
                 vprint(1,'Testing Finished ...')
