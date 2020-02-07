@@ -11,13 +11,16 @@ Graph definition for all models
 
 import tensorflow as tf
 import numpy as np
-import VAE_functions
+from hivae import VAE_functions
 
 def HVAE_graph(model_name, types_description, batch_size, learning_rate=1e-3, z_dim=2, y_dim=1, s_dim=2, y_dim_partition=[]):
     
     #We select the model for the VAE
+    # print('\n'*5)
     print('[*] Importing model: ' + model_name)
-    model = __import__(model_name)
+    # how to import a submoule 101
+    model = __import__('hivae.{}'.format(model_name),fromlist=[model_name])
+    #model = __import__(model_name)
     
     #Load placeholders
     print('[*] Defining placeholders')
