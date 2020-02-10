@@ -112,7 +112,6 @@ print(list(train_data.index[:20]))
 print(len(test_data))
 print(list(test_data.index[:20]))
 
-
 network_dict = {
     'batch_size' : 32,
     'model_name': 'model_HIVAE_inputDropout',
@@ -128,8 +127,8 @@ print('len training data',len(train_data))
 print(train_data)
 hivae = hivae.hivae(types_list,network_dict,network_path,results_path)
 
-hivae.fit(train_data,epochs=100,results_path=results_path,true_missing_mask=missing_true_train)
-(test_data, test_data_reconstructed, test_data_decoded, test_data_embedded_z, test_data_embedded_s) = hivae.predict(test_data,results_path=results_path,true_missing_mask=missing_true_test)
+hivae.fit(train_data,epochs=100,true_missing_mask=missing_true_train)
+(test_data, test_data_reconstructed, test_data_decoded, test_data_embedded_z, test_data_embedded_s) = hivae.predict(test_data,true_missing_mask=missing_true_test)
 
 print(test_data_embedded_z)
 

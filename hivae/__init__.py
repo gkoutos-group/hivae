@@ -1,4 +1,4 @@
-from .hivae import verbosity, vprint, save_get, hivae
+from .hivae import save_get, hivae
 # import graph_new
 # import VAE_functions
 # import model_HIVAE_factorized

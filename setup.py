@@ -3,15 +3,14 @@ import setuptools
 with open("README.md", "r") as readme_file:
     readme = readme_file.read()
 
-requirements = ['tensorflow>=1.15.0',
-                'pprint',
+requirements = ['tensorflow>=1.13.0',
                 'pandas',
                 'sklearn',
                     ]
     
 setuptools.setup(
     name='hivae',
-    version='0.43',
+    version='0.53',
     url='https://github.com/gkoutos-group/hivae/',
     license='MIT',
     author='Andreas Karwath',
