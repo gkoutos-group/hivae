@@ -8,7 +8,7 @@ import sys
 # import os
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
-tf.logging.set_verbosity(tf.logging.ERROR)
+#tf.logging.set_verbosity(tf.logging.ERROR)
 # import pprint
 # pprinter = pprint.PrettyPrinter(depth=3)
 from hivae import graph_new
@@ -20,6 +20,7 @@ from hivae import read_functions
 import os
 import csv
 from pathlib import Path
+import uuid
 
 
 
@@ -37,7 +38,7 @@ class hivae():
                  network_dict,
                  results_path     = None,          #ak: included a path for results
                  save_every_epoch = 1000,
-                 network_path     = None,  # may be internal?
+                 network_path     = None,          # may be internal?
                  verbosity_level  = 1
                  ):
 
@@ -70,9 +71,17 @@ class hivae():
         
         ###ak: not sure why the training method is called while constructing the string
         #self.savefile = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(self.training()[1]))
-        self.savefile         = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(save_get(network_dict,'batch_size','batch_size_unkown')))
-        self.experiment_name  = '{}_s{}_z{}_y{}_batch{}'.format(self.model_name,self.dim_s,self.dim_z,self.dim_y,self.batch_size)
-
+        self.savefile               = str(str(self.model_name)+'_'+'_Missing'+str(self.m_perc)+'_'+str(self.mask)+'_z'+str(self.dim_z)+'_y'+str(self.dim_y)+'_s'+str(self.dim_s)+'_batch'+str(save_get(network_dict,'batch_size','batch_size_unkown')))
+        self.experiment_name_plain  = '{}_s{}_z{}_y{}_batch{}'.format(self.model_name,self.dim_s,self.dim_z,self.dim_y,self.batch_size)
+        # generate random UUID
+        some_hash                   = uuid.uuid4().urn
+        #get string representation - removing leading 'urn:uuid:'
+        remove_urn_string = 'urn:uuid:'
+        some_hash = some_hash[some_hash.rfind(remove_urn_string)+len(remove_urn_string):]
+        
+        self.experiment_name_hash   = '{}_s{}_z{}_y{}_batch{}_{}'.format(self.model_name,self.dim_s,self.dim_z,self.dim_y,self.batch_size,some_hash)
+        self.experiment_name        = self.experiment_name_hash
+        
         # Create a directoy for the network files
         full_network_path = '{}/{}'.format(self.network_path,self.experiment_name)
         try:
@@ -102,8 +111,12 @@ class hivae():
         print('self.network_file_name', self.network_file_name)
 
 
+    def set_verbosity_level(self,verbosity_level=1):
+        # if self.verbosity_level>= 0 and self.verbosity_level<=5:
+        self.verbosity_level = verbosity_level
+        
     def vprint(self,verbosity_level,*args):
-        if self.verbosity_level<=verbosity_level:
+        if verbosity_level<=self.verbosity_level:
             if verbosity_level==1:
                 print('INFO :\t',*args)
             elif verbosity_level==2:
@@ -443,38 +456,57 @@ class hivae():
                 
             if training_phase:
                 self.vprint(1,'Training Finished ...')
+
+                # could be saved only if required
+                self.vprint(2,'Saving informations ...')
+                for (data_file_partial_name,data_values) in [
+                        ('loglik',loglik_epoch),
+                        ('KL_s',np.reshape(KL_s_epoch,[-1,1])),
+                        ('KL_z',np.reshape(KL_z_epoch,[-1,1])),
+                        ('train_error',error_train_mode_global),
+                        ('test_error',error_test_mode_global),
+                        #ak: hack for now - as entries are not lists 
+                        ('testloglik',[[x] for x in testloglik_epoch]),
+                        ]:
+                    self.save_data(self.full_results_path,'{}_{}.csv'.format(self.experiment_name,data_file_partial_name),data_values)
+
+                # self.save_data(self.full_results_path,'{}_loglik.csv'.format(self.experiment_name),loglik_epoch)
+                # self.save_data(self.full_results_path,'{}_KL_s.csv'.format(self.experiment_name),np.reshape(KL_s_epoch,[-1,1]))
+                # self.save_data(self.full_results_path,'{}_KL_z.csv'.format(self.experiment_name),np.reshape(KL_z_epoch,[-1,1]))
+                # self.save_data(self.full_results_path,'{}_train_error.csv'.format(self.experiment_name),error_train_mode_global)
+                # self.save_data(self.full_results_path,'{}_test_error.csv'.format(self.experiment_name),error_test_mode_global)
+                # #ak: hack for now - as entries are not lists 
+                # self.save_data(self.full_results_path,'{}_testloglik.csv'.format(self.experiment_name),[[x] for x in testloglik_epoch])
+
+                # Save the network/variables to disk at the end
                 self.vprint(1,'Saving Network ... <<{}>>'.format(self.network_file_name))  
-                save_path = saver.save(session, self.network_file_name)                
-                self.save_data(self.full_results_path,'{}_loglik.csv'.format(self.experiment_name),loglik_epoch)
-                self.save_data(self.full_results_path,'{}_KL_s.csv'.format(self.experiment_name),np.reshape(KL_s_epoch,[-1,1]))
-                self.save_data(self.full_results_path,'{}_KL_z.csv'.format(self.experiment_name),np.reshape(KL_z_epoch,[-1,1]))
-                self.save_data(self.full_results_path,'{}_train_error.csv'.format(self.experiment_name),error_train_mode_global)
-                self.save_data(self.full_results_path,'{}_test_error.csv'.format(self.experiment_name),error_test_mode_global)
-                #ak: hack for now - as entries are not lists 
-                self.save_data(self.full_results_path,'{}_testloglik.csv'.format(self.experiment_name),[[x] for x in testloglik_epoch])
-                # Save the variables to disk at the end
-                # save_path = saver.save(session, self.network_file_name)
-                # self.save_path = save_path
+                save_path = saver.save(session, self.network_file_name)
+                # not sure if this is required
+                #self.save_path = save_path
                 # print('save_path',save_path)
             
             elif testing_phase:
                 self.vprint(1,'Testing Finished ...')
                 #Compute the data reconstruction
-                # print('AK-DEBUG')
-                # print(n_batches)
-                # print(n_batches*batch_size_here)
-                # print(len(miss_mask_aux[:n_batches*batch_size_here,:]))
-                # print(len(train_data_transformed))
-                # print('AK-DEBUG')
             
                 data_reconstruction = train_data_transformed * miss_mask_aux[:n_batches*batch_size_here,:] + \
                   np.round(loglik_mode,3) * (1 - miss_mask_aux[:n_batches*batch_size_here,:])
+                  
                 train_data_transformed = train_data_transformed[np.argsort(random_perm)]
                 loglik_mean_reconstructed = loglik_mean[np.argsort(random_perm)]
                 data_reconstruction = data_reconstruction[np.argsort(random_perm)]
-                self.save_data(self.full_results_path,'{}_data_reconstruction.csv'.format(self.experiment_name),data_reconstruction)
-                self.save_data(self.full_results_path,'{}_data_true.csv'.format(self.experiment_name),train_data_transformed)
-                self.save_data(self.full_results_path,'{}_data_loglik_mean_reconstructed.csv'.format(self.experiment_name),loglik_mean_reconstructed)
+
+                self.vprint(2,'Saving reconstructions ...')
+                for (data_file_partial_name,data_values) in [
+                        ('data_reconstruction',data_reconstruction),
+                        ('data_true',train_data_transformed),
+                        ('data_loglik_mean_reconstructed',loglik_mean_reconstructed),
+                        ]:
+                    self.save_data(self.full_results_path,'{}_{}.csv'.format(self.experiment_name,data_file_partial_name),data_values)
+
+                # self.save_data(self.full_results_path,'{}_data_reconstruction.csv'.format(self.experiment_name),data_reconstruction)
+                # self.save_data(self.full_results_path,'{}_data_true.csv'.format(self.experiment_name),train_data_transformed)
+                # self.save_data(self.full_results_path,'{}_data_loglik_mean_reconstructed.csv'.format(self.experiment_name),loglik_mean_reconstructed)
 
                 df_real        = pd.DataFrame(train_data_transformed)
                 df_loglik_mean = pd.DataFrame(loglik_mean_reconstructed)

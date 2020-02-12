@@ -10,7 +10,7 @@ requirements = ['tensorflow>=1.13.0',
     
 setuptools.setup(
     name='hivae',
-    version='0.53',
+    version='0.16',
     url='https://github.com/gkoutos-group/hivae/',
     license='MIT',
     author='Andreas Karwath',

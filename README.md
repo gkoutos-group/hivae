@@ -1,26 +1,27 @@
 # hivae
 
-This repository contains the Modular reimplemenation of the Heterogeneous Incomplete Variational Autoencoder model (HI-VAE)written by Alfredo Nazabal (anazabal@turing.ac.uk). It was written in Python, using Tensorflow.
+This repository contains the Modular reimplemenation of the Heterogeneous Incomplete Variational Autoencoder model (HI-VAE)written by Alfredo Nazabal and co-workers.
+The package provided here is to a large part baseed on this implementation, but adheres to a more pythonic way, omitting the need for supplying parameters via I/O , as well as aligning the modelling more with sklearn.
+It was written by A. Karwath (a.karwath@bham.ac.uk) and F. Shalaby.
 
-The details of this model are included in this [paper](https://arxiv.org/abs/1807.03653). Please cite it if you use this code/library for your own research.
 
-## Database description
+The details of this model are included in this [paper](https://arxiv.org/abs/1807.03653). 
 
-There are three different example datasets found in the library (Wine, Adult and Diabetes). Majority of the datasets( Wine and Adult) have each their own folder, containing:
+## Install
 
-* **data.csv**: the dataset
-* **data_types.csv(NOT REQUIRED, LOOK AT THE EXAMPLE(working_example)**: a csv containing the types of that particular dataset. Every line is a different attribute containing three paramenters:
-	* type: real, pos (positive), cat (categorical), ord (ordinal), count
-	* dim: dimension of the variable
-	* nclass: number of categories (for cat and ord)
-* **Missingxx_y.csv**: a csv containing the positions of the different missing values in the data. Each "y" mask was generated randomly, containing a "xx" % of missing values.
+The package can be installed using pip:
 
-You can add your own datasets as long as they follow this structure.
+```pip install hivae```
+
+
+## Examples
+
+Once checked out, there are a number of example datasets (Wine, Adult and Diabetes), which can be found in ./hivae/examples/data. To evaluate the package, please use ./hivae/examples/hivae_general_example.py. The example should give a general explaination of how to use the package. More details will folow.
 
 
 ## Files description
 
-* **HIVAE.py**: The main script of the library, it needs to imported to work with the library and is connected to all the other scripts.
+* **hivae.py**: The main script of the library, it needs to imported to work with the library and is connected to all the other scripts.
 * **loglik_ models_ missing_normalize.py**: In this file, the different likelihood models for the different types of variables considered (real, positive, count, categorical and ordinal) are included.
 * **model_ HIVAE_inputDropout.py**: Contains the HI-VAE with input dropout encoder model.
 * **model_ HIVAE_factorized.py**: Contains the HI-VAE with factorized encoder model
@@ -28,14 +29,12 @@ You can add your own datasets as long as they follow this structure.
 ## Contact
 
 * **For questions regarding algorithm --> Alfredo Nazabal**: anazabal@turing.ac.uk
-* **For bugs or suggestion regarding code --> Fathy Shalaby**: fathy.mshalaby@outlook.com
 
-## Comments on general_example.py
+## More details regarding the hivae_general_example.py and use of the model (please note that this is under construction)
 
+main_directory: project folder
 
-main_directory: where is the project folder
-
-dataset_name: the name of the database (if you want)
+dataset_name: the name of the database (required)
 
 types_list_d: a dictionary where the key is the dataset name, which contains a list with tuples that indicates the column names, types, the number of dimensions and classes 
 
@@ -59,7 +58,7 @@ number of classes:
 
 dataset_path: this is the folder of the csv files
 
-results_path: the output folder for results
+results_path: the output folder for results (currently not used)
 
 network_path: where the models are going to be stored
 
