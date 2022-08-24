@@ -33,6 +33,8 @@ def place_holder_types(types_description, batch_size):
     #Create placeholders for every data type, with appropriate dimensions
     batch_data_list = []
     for i in range(len(types_list)):
+        # correct str <-> int - needs only be done once
+        types_list[i]['dim'] = int(types_list[i]['dim'])
         batch_data_list.append(tf.compat.v1.placeholder(tf.float32, shape=(batch_size,types_list[i]['dim'])))
     tf.concat(batch_data_list, axis=1)
     
