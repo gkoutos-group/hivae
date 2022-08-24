@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as readme_file:
     readme = readme_file.read()
 
-requirements = ['tensorflow>=2.6',
+requirements = [#'tensorflow', - issues with my miniforge3 - apple silicone - tensorflow setup
                 'tensorflow-probability',    
                 'pandas',
                 'sklearn',
@@ -11,7 +11,7 @@ requirements = ['tensorflow>=2.6',
     
 setuptools.setup(
     name='hivae2',
-    version='0.01',
+    version='0.05',
     url='https://github.com/gkoutos-group/hivae/',
     license='MIT',
     author='Andreas Karwath',
