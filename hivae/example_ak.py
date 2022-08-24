@@ -1,8 +1,14 @@
+import warnings
+
+warnings.simplefilter(action='ignore', category=UserWarning)
+
 import os.path
 import pandas as pd
 
 import HIVAE_AK
 import read_functions
+
+
 
 
 # define the dataset under investigation
@@ -38,25 +44,25 @@ print(hivae_type_list)
 
 # define network structure
 n_components = 5      # dimensions of the embedding
-batchsize    = 10
+batchsize    = 32
 
 hivae_network_dict = {
         'batch_size' : batchsize,
-        'model_name': 'model_HIVAE_inputDropout',
-        'dim_z': n_components,
-        'dim_y': 10,
-        'dim_s': 5, # internal max clusters
+        'model_name':  'model_HIVAE_inputDropout',
+        'dim_z':       n_components,
+        'dim_y':       10,
+        'dim_s':       5, # internal max clusters
         }
 
 # some directory settings for sacing results and networks for later use
 
 # where to save
-main_directory = './examples_save'
+save_directory = './save_results'
 data_directory = './data'
 # automatically generate directories, given the dataset name
 data_path    = '{}/{}/'.format(data_directory,dataset_name)
-network_path = '{}/{}/network/'.format(main_directory,dataset_name)
-results_path = '{}/{}/results/'.format(main_directory,dataset_name)
+network_path = '{}/{}/network/'.format(save_directory,dataset_name)
+results_path = '{}/{}/results/'.format(save_directory,dataset_name)
 
 # read in data
 
@@ -76,7 +82,7 @@ hivae_model = HIVAE_AK.HIVAE(hivae_type_list,hivae_network_dict,network_path,res
 print(dir(hivae_model))
 
 hivae_model.training_ak(train_data_df[hivae_variables],
-                      epochs=20,
+                      epochs=50,
                       learning_rate=1e-3,
                       results_path=network_path,
                       restore=False,
@@ -91,5 +97,5 @@ print(network_path)
 # reconstruct using the trained network
 (train_res_data, train_res_data_reconstructed, train_res_data_decoded, train_res_data_embedded_z, train_res_data_embedded_s) = hivae_model.training_ak(train_data_df[hivae_variables],epochs=1,results_path=results_path,train_or_test=False,restore_session=True,true_missing_mask=None)
 # (test_data, test_data_reconstructed, test_data_decoded, test_data_embedded_z, test_data_embedded_s) = hivae_model.training_ak(train_data_df[hivae_variables],epochs=1,results_path=results_path,train_or_test=False,restore_session=True,true_missing_mask=None)
-print(train_res_data[:10])
-print(train_res_data_reconstructed[:10])
+#print(train_res_data[:10])
+#print(train_res_data_reconstructed[:10])
