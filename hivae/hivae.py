@@ -276,10 +276,10 @@ class hivae():
                 y_dim_partition=None)
 
         ################### Running the VAE Training #################################
-        with tf.Session(graph=sess_HVAE) as session:
+        with tf.compat.v1.Session(graph=sess_HVAE) as session:
         
             # Add ops to save and restore all the variables.
-            saver = tf.train.Saver()
+            saver = tf.compat.v1.train.Saver()
         
             if training_phase:
                 self.vprint(1,'Training the HVAE ...')
@@ -291,7 +291,7 @@ class hivae():
                 self.vprint(1,"Model restored.")
             else:
                 self.vprint(1,'Initizalizing Variables ...')
-                tf.global_variables_initializer().run()
+                tf.compat.v1.global_variables_initializer().run()
     
         
             start_time = time.time()
