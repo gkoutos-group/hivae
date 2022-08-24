@@ -83,10 +83,10 @@ class HIVAE():
         n_batches = int(np.floor(np.shape(traindata)[0] / batchsize))
         miss_mask = np.multiply(miss_mask, true_miss_mask)
 
-        with tf.Session(graph=self._initialize_net(types_dict,batchsize)[1]) as session:
+        with tf.compat.v1.Session(graph=self._initialize_net(types_dict,batchsize)[1]) as session:
 
             # Add ops to save and restore all the variables.
-            saver = tf.train.Saver()
+            saver = tf.compat.v1.train.Saver()
 
             if (epochs==1):
                 saver.restore(session, self.network_file_name)
@@ -94,7 +94,7 @@ class HIVAE():
             else:
                 #        saver = tf.train.Saver()
                 print('Initizalizing Variables ...')
-                tf.global_variables_initializer().run()
+                tf.compat.v1.global_variables_initializer().run()
         tf_nodes = self.initialize()
         start_time = time.time()
         # Training cycle

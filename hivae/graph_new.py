@@ -50,7 +50,7 @@ def HVAE_graph(model_name, types_description, batch_size, learning_rate=1e-3, z_
     print('[*] Defining Cost function...')
     ELBO, loss_reconstruction, KL_z, KL_s = model.cost_function(log_p_x, p_params, q_params, types_list, z_dim, y_dim_output, s_dim)
     
-    optim = tf.train.AdamOptimizer(learning_rate).minimize(-ELBO)
+    optim = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(-ELBO)
     
     #Generator function for testing purposes
     samples_test, test_params, log_p_x_test, log_p_x_missing_test = model.samples_generator(batch_data_list, X_list, miss_list, types_list, batch_size, z_dim, y_dim_output, y_dim_partition, s_dim, tau, tau2, normalization_params)

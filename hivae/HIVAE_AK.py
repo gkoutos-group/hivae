@@ -8,7 +8,7 @@ import sys
 # import os
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
-tf.logging.set_verbosity(tf.logging.ERROR)
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 import pprint
 pprinter = pprint.PrettyPrinter(depth=3)
 import graph_new
@@ -192,10 +192,10 @@ class HIVAE():
                 y_dim_partition=None)
 
         ################### Running the VAE Training #################################
-        with tf.Session(graph=sess_HVAE) as session:
+        with tf.compat.v1.Session(graph=sess_HVAE) as session:
         
             # Add ops to save and restore all the variables.
-            saver = tf.train.Saver()
+            saver = tf.compat.v1.train.Saver()
         
             if training_phase:
                 vprint(1,'Training the HVAE ...')
@@ -207,7 +207,7 @@ class HIVAE():
                 vprint(1,"Model restored.")
             else:
                 vprint(1,'Initizalizing Variables ...')
-                tf.global_variables_initializer().run()
+                tf.compat.v1.global_variables_initializer().run()
     
         
             start_time = time.time()
