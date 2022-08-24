@@ -1,9 +1,11 @@
 # hivae2
 
-This repository contains the Modular reimplemenation of the Heterogeneous Incomplete Variational Autoencoder model (HI-VAE)written by Alfredo Nazabal (anazabal@turing.ac.uk). It was written in Python, using Tensorflow.
+This repository contains a modular reimplemenation of the "Heterogeneous Incomplete Variational Autoencoder model (HI-VAE) written by Alfredo Nazabal (anazabal@turing.ac.uk) et al. .written in Python.
 
 The details of this model can be found are included in this [paper](https://doi.org/10.1016/j.patcog.2020.107501). Please cite it if you use this code/library for your own research.
 This is an extenstion of implementations as easy to use Python library, upgraded for tensorflow2.
+
+
 
 
 ## Examples
@@ -22,6 +24,11 @@ See examples directory for usage
 
 * **For questions regarding algorithm --> Alfredo Nazabal**: anazabal@turing.ac.uk
 * **For bugs or suggestion regarding this code --> Andreas Karwath**: a.karwath@bham.ac.uk
+
+## Comments
+
+This version required tf2. For apple silcone users, please follow : https://developer.apple.com/metal/tensorflow-plugin/
+
 
 ## Comments on general_example.py (might be outdated!)
 
