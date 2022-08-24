@@ -4,6 +4,7 @@ with open("README.md", "r") as readme_file:
     readme = readme_file.read()
 
 requirements = ['tensorflow>=2.6',
+                'tensorflow-probability',    
                 'pandas',
                 'sklearn',
                     ]
