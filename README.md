@@ -1,11 +1,16 @@
 # hivae2
 
-This repository contains a modular reimplemenation of the "Heterogeneous Incomplete Variational Autoencoder model (HI-VAE) written by Alfredo Nazabal (anazabal@turing.ac.uk) et al. .written in Python.
+This repository contains a modular wrapper of the "Heterogeneous Incomplete Variational Autoencoder model (HI-VAE)".  The previous implementation branch (v1) has been used in: 
 
-The details of this model can be found are included in this [paper](https://doi.org/10.1016/j.patcog.2020.107501). Please cite it if you use this code/library for your own research.
+Karwath et al., Redefining β-blocker response in heart failure patients with sinus rhythm and atrial fibrillation: a machine learning cluster analysis, Lancet, 2021 [paper](https://doi.org/10.1016/S0140-6736(21)01638-X). 
+
+This modular wrapper was written by Andreas Karwath (a.karwath@bham.ac.uk) and Fathy Shalaby.
+
+The original coding was done by Alfredo Nazabal (anazabal@turing.ac.uk) et al. written in Python and details can be found in this [paper](https://doi.org/10.1016/j.patcog.2020.107501). 
+
 This is an extenstion of implementations as easy to use Python library, upgraded for tensorflow2.
 
-
+Please cite both papers if you should use this code/library for your own research.
 
 
 ## Examples
