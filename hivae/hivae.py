@@ -32,14 +32,17 @@ def save_get(aHash,aKey,aDefault):
         pass
     return aDefault
 
-class hivae():
+class hivae(object):
+
+    verbosity_level = 3
+    
     def __init__(self,
                  types_description,
                  network_dict,
                  results_path     = None,          #ak: included a path for results
-                 save_every_epoch = 1000,
                  network_path     = None,          # may be internal?
-                 verbosity_level  = 1
+                 save_every_epoch = 1000,
+                 verbosity_level  = None,
                  ):
 
         self.model_name       = save_get(network_dict,'model_name','unkown_model_name')
@@ -52,7 +55,11 @@ class hivae():
         self.dim_z            = save_get(network_dict,'dim_z',None) 
         self.dim_y            = save_get(network_dict,'dim_y',None)
         self.batch_size       = save_get(network_dict,'batch_size',32)
-        self.verbosity_level  = verbosity_level
+        if verbosity_level!=None:
+            #debug
+            #print('DEBUG setting verbosity_level init')
+            self.set_verbosity_level(verbosity_level)
+        #self.verbosity_level  = verbosity_level
 
 
         # self.true_miss_file   = true_miss_file
@@ -106,23 +113,9 @@ class hivae():
         self.network_file_name = '{}_ckpt'.format(self.full_network_path) 
         self.log_file_name     = '{}/log_file_{}.txt'.format(self.full_network_path,self.savefile)
 
-        print('self.full_network_path',self.full_network_path)
-        print('self.full_results_path',self.full_results_path)
-        print('self.network_file_name', self.network_file_name)
-
-
-    def set_verbosity_level(self,verbosity_level=1):
-        # if self.verbosity_level>= 0 and self.verbosity_level<=5:
-        self.verbosity_level = verbosity_level
-        
-    def vprint(self,verbosity_level,*args):
-        if verbosity_level<=self.verbosity_level:
-            if verbosity_level==1:
-                print('INFO :\t',*args)
-            elif verbosity_level==2:
-                print('DEBUG:\t',*args)
-            elif verbosity_level==3:
-                print('ERROR:\t',*args)
+        self.vprint(1,'self.full_network_path',self.full_network_path)
+        self.vprint(1,'self.full_results_path',self.full_results_path)
+        self.vprint(1,'self.network_file_name', self.network_file_name)
 
 
             
@@ -519,6 +512,57 @@ class hivae():
                             s_total[np.argsort(random_perm)])
 
         
+    # use own printing - should be changed to better logging
+    # classmethods are kept for backwards compatibility
+    @classmethod
+    def set_verbosity_level(cls,verbosity_level=3):
+        #print('DEBUGGER setting verbosity_level method')
+        # try:
+        #     verbosity_level = int(verbosity_level)
+        #     setattr(hivae, 'verbosity_level', int(verbosity_level))
+
+        # except:
+        #     print('HIVAE: VERBOSITY LEVEL NOT SET (not an int <<{}>>)'.format(verbosity_level))
+        #     pass
+        #self.verbosity_level = verbosity_level
+
+        hivae.set_verbosity_level(verbosity_level)
+        
+    def vprint(cls,vl,*args):
+        # #verbosity_level = int(verbosity_level)
+        # global_vl = getattr(hivae, 'verbosity_level')
+        # if global_vl <= vl:  
+        #     if vl==1:
+        #         print('INFO :\t',*args)
+        #     elif vl==2:
+        #         print('DEBUG:\t',*args)
+        #     elif vl==3:
+        #         print('ERROR:\t',*args)
+        hivae.vprint_s(vl,*args)
+        
+    @staticmethod
+    def vprint_s(vl,*args):
+        #verbosity_level = int(verbosity_level)
+        global_vl = getattr(hivae, 'verbosity_level')
+        if global_vl <= vl:  
+            if vl==1:
+                print('INFO :\t',*args)
+            elif vl==2:
+                print('DEBUG:\t',*args)
+            elif vl==3:
+                print('ERROR:\t',*args)
+
+    def set_verbosity_level_s(verbosity_level=3):
+        #print('DEBUGGER setting verbosity_level method')
+        try:
+            verbosity_level = int(verbosity_level)
+            setattr(hivae, 'verbosity_level', int(verbosity_level))
+
+        except:
+            print('HIVAE: VERBOSITY LEVEL NOT SET (not an int <<{}>>)'.format(verbosity_level))
+            pass
+
+                
             
 
 

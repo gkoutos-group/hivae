@@ -11,7 +11,7 @@ requirements = [#'tensorflow', - issues with my miniforge3 - apple silicone - te
     
 setuptools.setup(
     name='hivae2',
-    version='0.05',
+    version='0.9',
     url='https://github.com/gkoutos-group/hivae/',
     license='MIT',
     author='Andreas Karwath',
