@@ -6,7 +6,7 @@ Karwath et al., Redefining β-blocker response in heart failure patients with si
 
 This modular wrapper was written by Andreas Karwath (a.karwath@bham.ac.uk) and Fathy Shalaby.
 
-The original coding was done by Alfredo Nazabal (anazabal@turing.ac.uk) et al. written in Python and details can be found in this [paper](https://doi.org/10.1016/j.patcog.2020.107501). 
+The original coding was done by Alfredo Nazabal (anazabal@turing.ac.uk) et al. written in Python and details can be found in this [paper](https://doi.org/10.1016/j.patcog.2020.107501). The original code can be found here: https://github.com/probabilistic-learning/HI-VAE
 
 This is an extenstion of implementations as easy to use Python library, upgraded for tensorflow2.
 
