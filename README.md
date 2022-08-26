@@ -24,5 +24,5 @@ See examples directory for usage
 
 ## Comments
 
-This version requires tf2 (please not becasue of issues with installing tf2 on an Apple silicon, this is not specified in the setup.py as a requirement). For apple silcone users, please follow : https://developer.apple.com/metal/tensorflow-plugin/
+This version requires tf2 (please not because of issues with installing tf2 on an Apple silicon, this is not specified in the setup.py as a requirement). For apple silcone users, please follow : https://developer.apple.com/metal/tensorflow-plugin/
 
