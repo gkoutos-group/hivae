@@ -11,7 +11,17 @@ Created on Tue Jan 23 16:23:35 2018
 ## 2 fully connected layers at both encoding and decoding
 # hidden_dim is the number of neurons of the first hidden layer
 
+# get rid or INFO and WARNING tensorflow information
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+# https://github.com/google/jax/issues/13504
+#print(f'executing TF bug workaround ({__file__})')
+#config = tf.ConfigProto() - the simple one if from NVIDIA
+#config = tf.compat.v1.ConfigProto(gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8) )
+#config.gpu_options.allow_growth = True
+
 from hivae import VAE_functions
         
 def encoder(X_list, miss_list, batch_size, z_dim, s_dim, tau):
