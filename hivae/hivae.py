@@ -5,10 +5,24 @@
 @author: fathyshalaby,athro
 """
 import sys
-# import os
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+# get rid or INFO and WARNING tensorflow information
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 import tensorflow as tf
-#tf.logging.set_verbosity(tf.logging.ERROR)
+print('Tensorflow version : {}'.format(tf.__version__))
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+# https://github.com/google/jax/issues/13504
+#print(f'executing TF bug workaround ({__file__})')
+#config = tf.ConfigProto() - the simple one if from NVIDIA
+#config = tf.compat.v1.ConfigProto(gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8) )
+#config.gpu_options.allow_growth = True
+
+#session = tf.compat.v1.Session(config=config)
+#tf.compat.v1.keras.backend.set_session(session)
+
+
+
+
 # import pprint
 # pprinter = pprint.PrettyPrinter(depth=3)
 from hivae import graph_new
@@ -22,6 +36,11 @@ import csv
 from pathlib import Path
 import uuid
 
+# for temporary directories
+from tempfile import mkdtemp
+import shutil
+
+
 
 
 #ak: small method to savely get information from a dictionary
@@ -34,7 +53,9 @@ def save_get(aHash,aKey,aDefault):
 
 class hivae(object):
 
-    verbosity_level = 3
+    verbosity_level = None
+    
+
     
     def __init__(self,
                  types_description,
@@ -42,7 +63,7 @@ class hivae(object):
                  results_path     = None,          #ak: included a path for results
                  network_path     = None,          # may be internal?
                  save_every_epoch = 1000,
-                 verbosity_level  = None,
+                 verbosity_level  = 3,
                  ):
 
         self.model_name       = save_get(network_dict,'model_name','unkown_model_name')
@@ -55,19 +76,32 @@ class hivae(object):
         self.dim_z            = save_get(network_dict,'dim_z',None) 
         self.dim_y            = save_get(network_dict,'dim_y',None)
         self.batch_size       = save_get(network_dict,'batch_size',32)
-        if verbosity_level!=None:
-            #debug
-            #print('DEBUG setting verbosity_level init')
-            self.set_verbosity_level(verbosity_level)
+        #if verbosity_level!=None:
+        #    #debug
+        #    #print('DEBUG setting verbosity_level init')
+        self.set_verbosity_level(verbosity_level)
         #self.verbosity_level  = verbosity_level
 
 
         # self.true_miss_file   = true_miss_file
         # self.miss_file        = miss_file
+
+        main_path = '.'
+        
+        #if no paths where supplied - create a temporary directory
+        if not results_path and not network_path:
+            self.vprint(0,'No directories for saving supplied - creating temporary')
+            self.__temp_path = mkdtemp()
+            main_path        = self.__temp_path
+            self.vprint(0,f'__temp_path created: {main_path}')
+        
         if not results_path:
-            results_path     = './hivae_results'          #ak: included a path for results
+            results_path     = f'{main_path}/hivae_results'          #ak: included a path for results
+            self.vprint(0,f'saving results in: {results_path}')
+
         if not network_path:
-            network_path     = './hivae_networks'
+            network_path     = f'{main_path}/hivae_networks'
+            self.vprint(0,f'saving networks in: {network_path}')
 
                          
 
@@ -95,7 +129,7 @@ class hivae(object):
             if not os.path.exists(full_network_path):
                 os.makedirs(full_network_path)
         except:
-            self.vprint(3,'Could not create network path <<{}>>'.format(full_network_path))
+            self.vprint(2,'Could not create network path <<{}>>'.format(full_network_path))
             pass
         
         # Create a directoy for the results_path 
@@ -104,7 +138,7 @@ class hivae(object):
             if not os.path.exists(full_results_path):
                 os.makedirs(full_results_path)
         except:
-            self.vprint(3,'Could not create results path <<{}>>'.format(full_results_path))
+            self.vprint(2,'Could not create results path <<{}>>'.format(full_results_path))
             pass
         
         self.full_network_path = full_network_path
@@ -118,12 +152,39 @@ class hivae(object):
         self.vprint(1,'self.network_file_name', self.network_file_name)
 
 
-            
+    def get_paths(self):
+        results_path = None
+        network_path = None
+        try:
+            results_path = self.results_path
+        except:
+            pass
+        try:
+            network_path = self.network_path
+        except:
+            pass
+        return {'network_path':network_path,'results_path':results_path}
 
-        
+    def __get_temppath(self):
+        temp_path = None
+        try:
+            temp_path = self.__temp_path
+        except:
+            pass
+        return temp_path
+
+    # clean up upon deletion
+    # clean up temporary directory upon exit?
+    def __del__(self):
+        tempdir = self.__get_temppath()
+        if tempdir:
+            self.vprint(1,f'Deleting temp dir {tempdir}')
+            shutil.rmtree(tempdir)
+
+    
     def print_loss(self,epoch, start_time, avg_loss, avg_test_loglik, avg_KL_s, avg_KL_z):
         
-        self.vprint(2,'Epoch: {:4d}\ttime: {:4.2f}\ttrain_loglik: {:5.2f}\tKL_z: {:5.2f}\tKL_s: {:5.2f}\tELBO: {:5.2f}\tTest_loglik: {:5.2f}'.format(epoch, time.time() - start_time, avg_loss, avg_KL_z, avg_KL_s, avg_loss-avg_KL_z-avg_KL_s, avg_test_loglik))
+        self.vprint(1,'Epoch: {:4d}\ttime: {:4.2f}\ttrain_loglik: {:5.2f}\tKL_z: {:5.2f}\tKL_s: {:5.2f}\tELBO: {:5.2f}\tTest_loglik: {:5.2f}'.format(epoch, time.time() - start_time, avg_loss, avg_KL_z, avg_KL_s, avg_loss-avg_KL_z-avg_KL_s, avg_test_loglik))
 
 
     #ak: save the data in a more coherent fashion
@@ -135,7 +196,7 @@ class hivae(object):
                 os.makedirs(the_main_directory)
             dir_present = True
         except:
-            self.vprint(3,'Could not create path (<<{}>>)'.format(the_main_directory))
+            self.vprint(2,'Could not create path (<<{}>>)'.format(the_main_directory))
 
         if dir_present:
             full_file_path = '{}/{}'.format(the_main_directory,the_path)
@@ -144,7 +205,7 @@ class hivae(object):
                     writer = csv.writer(f)
                     writer.writerows(the_data)
             except:
-                self.vprint(3,'Problens writing data to <<{}>>\n{}'.format(full_file_path,str(the_data)))
+                self.vprint(2,'Problens writing data to <<{}>>\n{}'.format(full_file_path,str(the_data)))
             
             
 
@@ -204,7 +265,7 @@ class hivae(object):
                       missing_mask = None,
                       verbosity=3):
         
-        self.vprint(2,'len(training_data)',len(training_data))
+        self.vprint(1,'hivae:_training:len(training_data)',len(training_data))
 
         # train_or_test == True - training
         training_phase  = train_or_test
@@ -275,15 +336,16 @@ class hivae(object):
             saver = tf.compat.v1.train.Saver()
         
             if training_phase:
-                self.vprint(1,'Training the HVAE ...')
+                self.vprint(0,'Training the HIVAE ...')
             elif testing_phase:
-                self.vprint(1,'Testing the HVAE ...')
+                self.vprint(0,'Testing the HIVAE ...')
                 
             if restore_session:
+                self.vprint(0,'Restoring Model ...')
                 saver.restore(session, self.network_file_name)
-                self.vprint(1,"Model restored.")
+                self.vprint(0,f'Model restored ({self.network_file_name})')
             else:
-                self.vprint(1,'Initizalizing Variables ...')
+                self.vprint(0,'Initizalizing Variables ...')
                 tf.compat.v1.global_variables_initializer().run()
     
         
@@ -390,7 +452,7 @@ class hivae(object):
                 #Number of clusters created
                 cluster_index = np.argmax(q_params_complete['s'],1)
                 cluster = np.unique(cluster_index)
-                self.vprint(2,'Clusters: ' + str(len(cluster)))
+                self.vprint(1,'Clusters: ' + str(len(cluster)))
             
                 #Compute mean and mode of our loglik models
                 loglik_mean, loglik_mode = read_functions.statistics(p_params_complete['x'],self.types_list)
@@ -444,14 +506,14 @@ class hivae(object):
             
             
                 # if epoch % self.save == 0:
-                #     self.vprint(1,'Saving Variables ...')  
+                #     self.vprint(0,'Saving Variables ...')  
                 #     save_path = saver.save(session, self.network_file_name)
                 
             if training_phase:
-                self.vprint(1,'Training Finished ...')
+                self.vprint(0,'Training Finished ...')
 
                 # could be saved only if required
-                self.vprint(2,'Saving informations ...')
+                self.vprint(1,'Saving informations ...')
                 for (data_file_partial_name,data_values) in [
                         ('loglik',loglik_epoch),
                         ('KL_s',np.reshape(KL_s_epoch,[-1,1])),
@@ -479,7 +541,7 @@ class hivae(object):
                 # print('save_path',save_path)
             
             elif testing_phase:
-                self.vprint(1,'Testing Finished ...')
+                self.vprint(0,'Testing Finished ...')
                 #Compute the data reconstruction
             
                 data_reconstruction = train_data_transformed * miss_mask_aux[:n_batches*batch_size_here,:] + \
@@ -489,7 +551,7 @@ class hivae(object):
                 loglik_mean_reconstructed = loglik_mean[np.argsort(random_perm)]
                 data_reconstruction = data_reconstruction[np.argsort(random_perm)]
 
-                self.vprint(2,'Saving reconstructions ...')
+                self.vprint(1,'Saving reconstructions ...')
                 for (data_file_partial_name,data_values) in [
                         ('data_reconstruction',data_reconstruction),
                         ('data_true',train_data_transformed),
@@ -503,8 +565,8 @@ class hivae(object):
 
                 df_real        = pd.DataFrame(train_data_transformed)
                 df_loglik_mean = pd.DataFrame(loglik_mean_reconstructed)
-                self.vprint(2,'Reconstruction Correlation:')
-                self.vprint(2,df_real.corrwith(df_loglik_mean))
+                self.vprint(1,'Reconstruction Correlation:')
+                self.vprint(1,df_real.corrwith(df_loglik_mean))
                 
 
                 return (train_data_transformed,data_reconstruction,loglik_mean_reconstructed,
@@ -526,32 +588,48 @@ class hivae(object):
         #     pass
         #self.verbosity_level = verbosity_level
 
-        hivae.set_verbosity_level(verbosity_level)
-        
-    def vprint(cls,vl,*args):
-        # #verbosity_level = int(verbosity_level)
-        # global_vl = getattr(hivae, 'verbosity_level')
-        # if global_vl <= vl:  
-        #     if vl==1:
-        #         print('INFO :\t',*args)
-        #     elif vl==2:
-        #         print('DEBUG:\t',*args)
-        #     elif vl==3:
-        #         print('ERROR:\t',*args)
-        hivae.vprint_s(vl,*args)
-        
-    @staticmethod
-    def vprint_s(vl,*args):
-        #verbosity_level = int(verbosity_level)
-        global_vl = getattr(hivae, 'verbosity_level')
-        if global_vl <= vl:  
-            if vl==1:
-                print('INFO :\t',*args)
-            elif vl==2:
-                print('DEBUG:\t',*args)
-            elif vl==3:
-                print('ERROR:\t',*args)
+        #hivae.set_verbosity_level(verbosity_level)
+        verbosity_level = min(verbosity_level,hivae.ERROR)
+        setattr(cls, 'verbosity_level', verbosity_level)
 
+
+    # class method leads to static methods
+    def vprint(cls,vl,*args):
+        hivae.vprint_s(vl,*args)
+
+    # use the same verbosity levels as TF_CPP_MIN_LOG_LEVEL
+    # 0 - Log all messages
+    # 1 - Log all messages except INFO.
+    # 2 - Log all messages except INFO and WARNING. (default)
+    # 3 - Log all messages except INFO, WARNING, and ERROR..
+
+    # logging levels 
+    ALL    = 0
+    INFO   = 1
+    DEBUG  = 2
+    ERROR  = 3
+
+
+    @staticmethod
+    # vprint static method
+    def vprint_s(vl,*args):
+        lv = hivae.ERROR-vl
+        #verbosity_level = int(verbosity_level)
+        class_vl = getattr(hivae, 'verbosity_level')
+        
+        if vl <= hivae.ERROR and class_vl <= vl:
+            if vl==0:
+                print('INFO:    \t',vl,lv,*args)
+            elif vl==1:
+                print('DEBUG:   \t',vl,lv,*args)
+            elif vl==2:
+                print('ERROR:   \t',vl,lv,*args)
+            elif vl>2:
+                print('CRTICAL: \t',vl,lv,*args)
+            
+
+        
+    # set_verbosity_leve static method
     def set_verbosity_level_s(verbosity_level=3):
         #print('DEBUGGER setting verbosity_level method')
         try:
@@ -562,8 +640,6 @@ class hivae(object):
             print('HIVAE: VERBOSITY LEVEL NOT SET (not an int <<{}>>)'.format(verbosity_level))
             pass
 
-                
-            
-
+        
 
 
