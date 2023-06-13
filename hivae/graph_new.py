@@ -8,8 +8,17 @@ Graph definition for all models
 @author: anazabal, olmosUC3M, ivaleraM
 @changes: athro
 """
-
+# get rid or INFO and WARNING tensorflow information
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+# https://github.com/google/jax/issues/13504
+#print(f'executing TF bug workaround ({__file__})')
+#config = tf.ConfigProto() - the simple one if from NVIDIA
+#config = tf.compat.v1.ConfigProto(gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8) )
+#config.gpu_options.allow_growth = True
+
 import numpy as np
 from hivae import VAE_functions
 import hivae #import hivae as hivae
@@ -18,13 +27,13 @@ def HVAE_graph(model_name, types_description, batch_size, learning_rate=1e-3, z_
     
     #We select the model for the VAE
     #print('[*] Importing model: ' + model_name)
-    hivae.hivae.vprint_s(2,'[*] Importing model: ' + model_name)
+    hivae.hivae.vprint_s(1,'[*] Importing model: ' + model_name)
     # how to import a submoule 101
     model = __import__('hivae.{}'.format(model_name),fromlist=[model_name])
     #model = __import__(model_name)
     
     #Load placeholders
-    hivae.hivae.vprint_s(2,'[*] Defining placeholders')
+    hivae.hivae.vprint_s(1,'[*] Defining placeholders')
     batch_data_list, batch_data_list_observed, miss_list, tau, tau2, types_list = VAE_functions.place_holder_types(types_description, batch_size)
     
     #Batch normalization of the data
@@ -38,20 +47,20 @@ def HVAE_graph(model_name, types_description, batch_size, learning_rate=1e-3, z_
         y_dim_output = np.sum(y_dim_partition)
     
     #Encoder definition
-    hivae.hivae.vprint_s(2,'[*] Defining Encoder...')
+    hivae.hivae.vprint_s(1,'[*] Defining Encoder...')
     samples, q_params = model.encoder(X_list, miss_list, batch_size, z_dim, s_dim, tau)
     encoding = samples
-    # hivae.hivae.vprint_s(2,'debug ' * 10)
-    # hivae.hivae.vprint_s(2,samples)
-    # hivae.hivae.vprint_s(2,'- ' * 10)
-    # hivae.hivae.vprint_s(2,q_params)
-    # hivae.hivae.vprint_s(2,'debug ' * 10)
+    # hivae.hivae.vprint_s(1,'debug ' * 10)
+    # hivae.hivae.vprint_s(1,samples)
+    # hivae.hivae.vprint_s(1,'- ' * 10)
+    # hivae.hivae.vprint_s(1,q_params)
+    # hivae.hivae.vprint_s(1,'debug ' * 10)
 
     
-    hivae.hivae.vprint_s(2,'[*] Defining Decoder...')
+    hivae.hivae.vprint_s(1,'[*] Defining Decoder...')
     theta, samples, p_params, log_p_x, log_p_x_missing = model.decoder(batch_data_list, miss_list, types_list, samples, q_params, normalization_params, batch_size, z_dim, y_dim_output, y_dim_partition, tau2)
 
-    hivae.hivae.vprint_s(2,'[*] Defining Cost function...')
+    hivae.hivae.vprint_s(1,'[*] Defining Cost function...')
     ELBO, loss_reconstruction, KL_z, KL_s = model.cost_function(log_p_x, p_params, q_params, types_list, z_dim, y_dim_output, s_dim)
     
     optim = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(-ELBO)
