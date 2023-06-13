@@ -15,7 +15,18 @@ The variable reuse indicates the mode of this functions
 
 """
 
+# get rid or INFO and WARNING tensorflow information
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+# https://github.com/google/jax/issues/13504
+#print(f'executing TF bug workaround ({__file__})')
+#config = tf.ConfigProto() - the simple one if from NVIDIA
+#config = tf.compat.v1.ConfigProto(gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8) )
+#config.gpu_options.allow_growth = True
+
+
 import tensorflow_probability as tfp
 import numpy as np
 
