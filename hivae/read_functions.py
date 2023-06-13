@@ -13,6 +13,19 @@ import scipy.io as sc
 from sklearn.metrics import mean_squared_error
 from pathlib import Path
 
+# to overcome issues with mixed data types and nan:
+# np.isnan(data)
+# TypeError: ufunc 'isnan' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+
+local_isnan = np.isnan
+#try:
+#    import pandas as pd
+#    local_isnan = pd.isna
+#except:
+#    pass
+
+
+
 def saveInt(potentialInt):
     intReturn = None
     try:
@@ -45,14 +58,15 @@ def read_data_df(data_df,types_description,true_missing_mask=None):
     types_list = get_types_list(types_description)
     data = np.array(data_df)
 
-
     # handle truely missing data
     if type(true_missing_mask) != type(None):
         data_masked = np.ma.masked_where(np.isnan(data),data)
         #We need to fill the data depending on the given data...
         data_filler = []
         for i in range(len(types_list)):
-            if types_list[i]['type'] == 'cat' or types_list[i]['type'] == 'ordinal':
+            #print('read_data_df',i,types_list[i])
+            #if types_list[i]['type'] == 'cat' or types_list[i]['type'] == 'ordinal':
+            if types_list[i]['type'] in ['cat','ord','categorical','ordinal']:
                 aux = np.unique(data[:,i])
                 data_filler.append(aux[0])  #Fill with the first element of the cat (0, 1, or whatever)
             else:
@@ -63,7 +77,8 @@ def read_data_df(data_df,types_description,true_missing_mask=None):
     # Construct the data matrices
     data_complete = []
     for i in range(np.shape(data)[1]):
-        if types_list[i]['type'] == 'cat':
+        #if types_list[i]['type'] == 'cat':
+        if types_list[i]['type'] in ['cat','categorical']:
             # Get categories
             cat_data = [int(x) for x in data[:, i]]
             categories, indexes = np.unique(cat_data, return_inverse=True)
@@ -75,7 +90,8 @@ def read_data_df(data_df,types_description,true_missing_mask=None):
             aux[np.arange(np.shape(data)[0]), cat_data] = 1
             data_complete.append(aux)
 
-        elif types_list[i]['type'] == 'ordinal':
+        #elif types_list[i]['type'] == 'ordinal':
+        elif types_list[i]['type'] in ['ord','ordinal']:
             # Get categories
             cat_data = [int(x) for x in data[:, i]]
             categories, indexes = np.unique(cat_data, return_inverse=True)
@@ -101,6 +117,9 @@ def read_data_df(data_df,types_description,true_missing_mask=None):
     data = np.concatenate(data_complete, 1)
     n_samples = np.shape(data)[0]
 
+    #print('read_data_df','data',data)
+    #print('read_data_df','n_samples',n_samples)
+
     return data, types_list, n_samples
     
 
@@ -119,7 +138,9 @@ def read_data_df_as_input(datadf, types_description, miss_file, true_miss):
         # We need to fill the data depending on the given data...
         data_filler = []
         for i in range(len(types_list)):
-            if types_list[i]['type'] == 'cat' or types_list[i]['type'] == 'ordinal':
+            #if types_list[i]['type'] == 'cat' or types_list[i]['type'] == 'ordinal':
+            if types_list[i]['type'] in ['cat','ord','categorical','ordinal']:
+                
                 aux = np.unique(data[:, i])
                 data_filler.append(aux[0])  # Fill with the first element of the cat (0, 1, or whatever)
             else:
@@ -132,7 +153,8 @@ def read_data_df_as_input(datadf, types_description, miss_file, true_miss):
     # Construct the data matrices
     data_complete = []
     for i in range(np.shape(data)[1]):
-        if types_list[i]['type'] == 'cat':
+        #if types_list[i]['type'] == 'cat':
+        if types_list[i]['type'] in ['cat','categorical']:
             # Get categories
             cat_data = [int(x) for x in data[:, i]]
             categories, indexes = np.unique(cat_data, return_inverse=True)
@@ -144,7 +166,8 @@ def read_data_df_as_input(datadf, types_description, miss_file, true_miss):
             aux[np.arange(np.shape(data)[0]), cat_data] = 1
             data_complete.append(aux)
 
-        elif types_list[i]['type'] == 'ordinal':
+        #elif types_list[i]['type'] == 'ordinal':
+        elif types_list[i]['type'] in ['ord','ordinal']:
             # Get categories
             cat_data = [int(x) for x in data[:, i]]
             categories, indexes = np.unique(cat_data, return_inverse=True)
@@ -208,7 +231,8 @@ def read_data(data_file, types_file, miss_file, true_miss_file):
         # We need to fill the data depending on the given data...
         data_filler = []
         for i in range(len(types_dict)):
-            if types_dict[i]['type'] == 'cat' or types_dict[i]['type'] == 'ordinal':
+            #if types_dict[i]['type'] == 'cat' or types_list[i]['type'] == 'ordinal':
+            if types_dict[i]['type'] in ['cat','ord','categorical','ordinal']:
                 aux = np.unique(data[:, i])
                 data_filler.append(aux[0])  # Fill with the first element of the cat (0, 1, or whatever)
             else:
@@ -222,7 +246,8 @@ def read_data(data_file, types_file, miss_file, true_miss_file):
     data_complete = []
     for i in range(np.shape(data)[1]):
 
-        if types_dict[i]['type'] == 'cat':
+        #if types_dict[i]['type'] == 'cat':
+        if types_dict[i]['type'] in ['cat','categorical']:
             # Get categories
             cat_data = [int(x) for x in data[:, i]]
             categories, indexes = np.unique(cat_data, return_inverse=True)
@@ -234,7 +259,8 @@ def read_data(data_file, types_file, miss_file, true_miss_file):
             aux[np.arange(np.shape(data)[0]), cat_data] = 1
             data_complete.append(aux)
 
-        elif types_dict[i]['type'] == 'ordinal':
+        #elif types_dict[i]['type'] == 'ordinal':
+        elif types_dict[i]['type'] in ['ord','ordinal']:
             # Get categories
             cat_data = [int(x) for x in data[:, i]]
             categories, indexes = np.unique(cat_data, return_inverse=True)
@@ -277,6 +303,7 @@ def read_data(data_file, types_file, miss_file, true_miss_file):
 
 
 def next_batch(data, types_dict, miss_mask, batch_size, index_batch):
+    #print('next_batch',index_batch)
     # Create minibath
     batch_xs = data[index_batch * batch_size:(index_batch + 1) * batch_size, :]
 
@@ -295,6 +322,8 @@ def next_batch(data, types_dict, miss_mask, batch_size, index_batch):
 
 
 def samples_concatenation(samples):
+    #print('samples_concatenation','samples',type(samples))
+    #print('samples_concatenation','samples',samples)
     for i, batch in enumerate(samples):
         #print('DEBUG', i,batch)
         if i == 0:
@@ -316,9 +345,11 @@ def discrete_variables_transformation(data, types_dict):
     output = []
     for d in range(len(types_dict)):
         ind_end = ind_ini + int(types_dict[d]['dim'])
-        if types_dict[d]['type'] == 'cat':
+        #if types_dict[d]['type'] == 'cat':
+        if types_dict[d]['type'] in ['cat','categorical']:
             output.append(np.reshape(np.argmax(data[:, ind_ini:ind_end], 1), [-1, 1]))
-        elif types_dict[d]['type'] == 'ordinal':
+        #elif types_dict[d]['type'] == 'ordinal':
+        elif types_dict[d]['type'] in ['ord','ordinal']:
             output.append(np.reshape(np.sum(data[:, ind_ini:ind_end], 1) - 1, [-1, 1]))
         else:
             output.append(data[:, ind_ini:ind_end])
@@ -333,7 +364,8 @@ def mean_imputation(train_data, miss_mask, types_dict):
     est_data = []
     for dd in range(len(types_dict)):
         # Imputation for cat and ordinal is done using the mode of the data
-        if types_dict[dd]['type'] == 'cat' or types_dict[dd]['type'] == 'ordinal':
+        #if types_dict[dd]['type'] == 'cat' or types_dict[dd]['type'] == 'ordinal':
+        if types_dict[dd]['type'] in ['cat','ord','categorical','ordinal']:
             ind_end = ind_ini + 1
             # The imputation is based on whatever is observed
             miss_pattern = (miss_mask[:, dd] == 1)
@@ -453,7 +485,8 @@ def error_computation(x_train, x_hat, types_dict, miss_mask):
                 error_missing.append(np.mean(
                     x_train[miss_mask[:, dd] == 0, ind_ini:ind_end] != x_hat[miss_mask[:, dd] == 0, ind_ini:ind_end]))
         # Mean "shift" error
-        elif types_dict[dd]['type'] == 'ordinal':
+        #elif types_dict[dd]['type'] == 'ordinal':
+        elif types_dict[dd]['type'] in ['ord','ordinal']:
             ind_end = ind_ini + 1
             error_observed.append(np.mean(np.abs(
                 x_train[miss_mask[:, dd] == 1, ind_ini:ind_end] - x_hat[miss_mask[:, dd] == 1, ind_ini:ind_end])) / int(
