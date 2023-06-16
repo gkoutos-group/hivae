@@ -7,8 +7,8 @@
 import sys
 # get rid or INFO and WARNING tensorflow information
 import os
-#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-#os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 import tensorflow as tf
 #print('Tensorflow version : {}'.format(tf.__version__))
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
