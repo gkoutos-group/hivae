@@ -7,18 +7,19 @@
 import sys
 # get rid or INFO and WARNING tensorflow information
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+#os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 import tensorflow as tf
-print('Tensorflow version : {}'.format(tf.__version__))
+#print('Tensorflow version : {}'.format(tf.__version__))
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # https://github.com/google/jax/issues/13504
 #print(f'executing TF bug workaround ({__file__})')
 #config = tf.ConfigProto() - the simple one if from NVIDIA
-#config = tf.compat.v1.ConfigProto(gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8) )
-#config.gpu_options.allow_growth = True
+grow_config = tf.compat.v1.ConfigProto(gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.4) )
+grow_config.gpu_options.allow_growth = True
 
-#session = tf.compat.v1.Session(config=config)
-#tf.compat.v1.keras.backend.set_session(session)
+session = tf.compat.v1.Session(config=grow_config)
+tf.compat.v1.keras.backend.set_session(session)
 
 
 
@@ -330,7 +331,7 @@ class hivae(object):
                 y_dim_partition=None)
 
         ################### Running the VAE Training #################################
-        with tf.compat.v1.Session(graph=sess_HVAE) as session:
+        with tf.compat.v1.Session(graph=sess_HVAE,config=grow_config) as session:
         
             # Add ops to save and restore all the variables.
             saver = tf.compat.v1.train.Saver()
@@ -591,11 +592,12 @@ class hivae(object):
         #hivae.set_verbosity_level(verbosity_level)
         verbosity_level = min(verbosity_level,hivae.ERROR)
         setattr(cls, 'verbosity_level', verbosity_level)
-
+        setattr(hivae, 'verbosity_level', verbosity_level)
 
     # class method leads to static methods
     def vprint(cls,vl,*args):
-        hivae.vprint_s(vl,*args)
+        cls.vprint_s(vl,*args)
+        #hivae.vprint_s(vl,*args)
 
     # use the same verbosity levels as TF_CPP_MIN_LOG_LEVEL
     # 0 - Log all messages
@@ -613,9 +615,13 @@ class hivae(object):
     @staticmethod
     # vprint static method
     def vprint_s(vl,*args):
+        class_vl = getattr(hivae, 'verbosity_level')
+        if class_vl == None:
+            class_vl = 0
+        #print(vl,class_vl,hivae.ERROR)
         lv = hivae.ERROR-vl
         #verbosity_level = int(verbosity_level)
-        class_vl = getattr(hivae, 'verbosity_level')
+        #class_vl = getattr(hivae, 'verbosity_level')
         
         if vl <= hivae.ERROR and class_vl <= vl:
             if vl==0:
