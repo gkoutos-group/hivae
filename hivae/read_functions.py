@@ -470,6 +470,7 @@ def statistics(loglik_params, types_dict):
 
 
 def error_computation(x_train, x_hat, types_dict, miss_mask):
+    #print('error_computation'.upper())
     error_observed = []
     error_missing = []
     ind_ini = 0
@@ -501,6 +502,17 @@ def error_computation(x_train, x_hat, types_dict, miss_mask):
         else:
             ind_end = ind_ini + int(types_dict[dd]['dim'])
             norm_term = np.max(x_train[:, dd]) - np.min(x_train[:, dd])
+            #print(miss_mask[:, dd] == 1)
+            #print(x_train[miss_mask[:, dd] == 1, ind_ini:ind_end])
+            #print(20*'-')
+            #print(miss_mask[:, dd] == 1)
+            #print(x_hat[miss_mask[:, dd] == 1,ind_ini:ind_end])
+            #print(norm_term)
+            #print()
+            #print()
+            #print()
+
+            
             error_observed.append(np.sqrt(mean_squared_error(x_train[miss_mask[:, dd] == 1, ind_ini:ind_end],
                                                              x_hat[miss_mask[:, dd] == 1,
                                                              ind_ini:ind_end])) / norm_term)
