@@ -48,7 +48,7 @@ class HiVAEImputer(BaseEstimator, TransformerMixin):
     use_columns_categories : None
         Note sure what that was for
     epochs: integer (10)
-    batch_size:  32
+    batch_size:  32 # maxed to number of samples
     model_name: 'model_HIVAE_inputDropout','model_HIVAE_factorized'
     dim_z: 12
     dim_y: 5
@@ -62,7 +62,7 @@ class HiVAEImputer(BaseEstimator, TransformerMixin):
         The array with imputed values in the target column
     '''
 
-    batch_size  = 10 
+    batch_size  = 32 
     model_name  = 'model_HIVAE_inputDropout'
     dim_z       = 12
     dim_y       = 5
@@ -77,14 +77,14 @@ class HiVAEImputer(BaseEstimator, TransformerMixin):
                  target_columns  = [], 
                  use_columns_categories    = None, 
                  epochs          = 10,
-                 batch_size      = 10,
+                 batch_size      = 32,
                  model_name      = 'model_HIVAE_inputDropout',
                  dim_z           = 12,
                  dim_y           = 5,
                  dim_s           = 10,
                  #network_def    = None,
                  dir_hivea       = './hivae',
-                 verbosity_level = 3,
+                 verbosity_level = 0,
                 ):
         
         # ensuring minial compliance
@@ -109,6 +109,7 @@ class HiVAEImputer(BaseEstimator, TransformerMixin):
         #    self.network_def = self._guess_network_def(cols_use)
 
         # save the supplied information
+        
         self.batch_size     = batch_size
         self.model_name     = model_name
         self.dim_z          = dim_z
@@ -195,6 +196,9 @@ class HiVAEImputer(BaseEstimator, TransformerMixin):
 
         
         #self.generate_type_listprint('network_def = <<{}>>'.format(self.network_def))
+        if len(X) < self.batch_size:
+            hivae.hivae.vprint_s(2,'batch_size has been adepted from {} to {} because of dataset size'.format(self.batch_size,len(X)))
+            self.batch_size     = min(self.batch_size,len(X))
         local_network_def = {
             'batch_size' : self.batch_size,
             'model_name':  self.model_name,
@@ -216,15 +220,6 @@ class HiVAEImputer(BaseEstimator, TransformerMixin):
         
             hivae.hivae.set_verbosity_level_s(self.verbosity_level)
             
-            #print('hivae.fit2a',df_ana_local.shape)
-            #print('hivae.fit2b',df_ana_local_encoded.shape)
-            #print('hivae.fit2c',df_ana_local_missing_mask.shape)
-            #print('hivae.fit2de',local_network_def)
-            #print('hivae.fit2e',hivae_obj)
-            #print('hivae.fit2e','0x{:x}'.format(id(hivae_obj)))
-            #print('hivae.fit2 - types_list_local', types_list_local)
-            
-            #print('hivae.fit2 - df_ana_local_encoded', df_ana_local_encoded.head())
             
             hivae_obj.fit(
                 df_ana_local_encoded,
